@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux'
 import { CiForkAndKnife } from "react-icons/ci";
 import { useNavigate } from 'react-router-dom';
 import { FaPen } from "react-icons/fa";
-import OwnerItemCard from './ownerItemCard';
+import OwnerItemCard from './OwnerItemCard.jsx';
 
 const OwnerDashboard = () => {
   const navigate = useNavigate();

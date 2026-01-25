@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react' // useState aur useEffect add kiya
 import { Navigate, Route, Routes } from 'react-router-dom'
-import SignIn from './pages/SignIn'
-import SignUp from './pages/SignUp'
-import ForgotPassword from './pages/ForgotPassword'
+import SignIn from "./pages/SignIn.jsx";
+import SignUp from "./pages/SignUp.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
 import useGetCurrentUser from './hooks/useGetCurrentUser'
 import { useSelector, useDispatch } from 'react-redux' // useDispatch add kiya
 import { setUserData } from './redux/userSlice' // setUserData import kiya
-import Home from './pages/Home'
+import Home from "./pages/Home.jsx";
 import Nav from './components/Nav'
 import useGetCity from './hooks/useGetCity'
 import useGetMyShop from './hooks/useGetMyShop'
-import CreateEditShop from './pages/CreateEditShop.jsx'
+import CreateEditShop from "./pages/CreateEditShop.jsx";
 import MainLayout from './layouts/MainLayout'
-import AddItem from './pages/AddItem'
-import EditItem from './pages/EditItem'
+import AddItem from "./pages/AddItem.jsx";
+import EditItem from "./pages/EditItem.jsx";
 import useGetShopByCity from './hooks/useGetShopByCity'
 import useGetItemsbyCity from './hooks/useGetItemsbyCity'
 

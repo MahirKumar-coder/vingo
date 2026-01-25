@@ -13,7 +13,7 @@ import useGetMyShop from './hooks/useGetMyShop'
 import CreateEditShop from './pages/createEditShop'
 import MainLayout from './layouts/MainLayout'
 import AddItem from './pages/AddItem'
-import EditItem from './pages/editItem'
+import EditItem from './pages/EditItem'
 import useGetShopByCity from './hooks/useGetShopByCity'
 import useGetItemsbyCity from './hooks/useGetItemsbyCity'
 

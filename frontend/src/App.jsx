@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react' // useState aur useEffect add kiya
 import { Navigate, Route, Routes } from 'react-router-dom'
 import SignIn from './pages/SignIn'
-import SignUp from './pages/Signup'
+import SignUp from './pages/SignUp'
 import ForgotPassword from './pages/ForgotPassword'
 import useGetCurrentUser from './hooks/useGetCurrentUser'
 import { useSelector, useDispatch } from 'react-redux' // useDispatch add kiya

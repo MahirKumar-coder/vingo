@@ -49,8 +49,8 @@ const UserDashboard = () => {
     shopRef.current?.addEventListener("scroll", shopScroll);
 
     return () => {
-      cateRef.current?.removeEventListener("scroll", cateScroll);
-      shopRef.current?.removeEventListener("scroll", shopScroll);
+      cateRef?.current?.removeEventListener("scroll", cateScroll);
+      shopRef?.current?.removeEventListener("scroll", shopScroll);
     };
   }, []);
 

@@ -70,7 +70,7 @@ function Popup({ anchorRect, onClose, displayName, onLogout }) {
 
 
 const Nav = () => {
-  const { userData, currentCity } = useSelector(state => state.user);
+  const { userData, currentCity, cartItems } = useSelector(state => state.user);
   const { myShopData } = useSelector((state) => state.owner || {});
   const rawName = (userData?.fullName || "").trim();
   const userInitial = (rawName ? rawName.charAt(0).toUpperCase() : "U") || "U";
@@ -217,11 +217,11 @@ const Nav = () => {
               <button
                 type="button"
                 className="relative p-2 rounded-md hover:bg-[#ff4d2d]/10 transition-colors focus:outline-none focus:ring-2 focus:ring-[#ff4d2d]/40"
-                aria-label="Cart"
+                aria-label="Cart" onClick={() => navigate("/cart")}
               >
                 <IoCartOutline size={22} className="text-[#ff4d2d]" />
                 <span className="absolute -right-2 -top-1 bg-white text-[#ff4d2d] text-xs font-semibold py-0.5 px-2 rounded-full shadow-sm">
-                  0
+                  {cartItems.length}
                 </span>
               </button>
 

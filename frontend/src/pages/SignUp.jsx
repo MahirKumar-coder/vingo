@@ -51,7 +51,7 @@ const SignUp = () => {
   // --- FIX 2: 'serverUrl' ko define karo ---
   // Apne backend server ka sahi URL yahaan daalo.
   // Agar tumhara backend port 8000 par chal raha hai toh yeh sahi hai.
-  const serverUrl = "http://localhost:8000"
+  const serverUrl = import.meta.env.VITE_SERVER_URL || "http://localhost:8000";
 
   const [showPassword, setShowPassword] = useState(false)
   const [role, setRole] = useState("user")

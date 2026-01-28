@@ -1,5 +1,5 @@
 import dns from "dns";
-dns.setDefaultResultOrder("ipv4first"); // 🔥 SABSE PEHLE
+dns.setServers(["8.8.8.8", "8.8.4.4"]); // 🔥 SABSE PEHLE
 
 import express from "express";
 import dotenv from "dotenv";

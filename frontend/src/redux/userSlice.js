@@ -61,6 +61,7 @@ const userSlice = createSlice({
                 state.cartItems.push(cartItem);
             }
             
+            state.totalAmount = state.cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
             
         },
 
@@ -70,10 +71,12 @@ const userSlice = createSlice({
             if (item) {
                 item.quantity = quantity;
             }
+            state.totalAmount = state.cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
         },
 
         removeCartItem: (state, action) => {
             state.cartItems = state.cartItems.filter(i => i.id !== action.payload);
+            state.totalAmount = state.cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
         }
     }
 });

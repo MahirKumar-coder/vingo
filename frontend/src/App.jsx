@@ -17,6 +17,7 @@ import EditItem from "./pages/EditItem.jsx";
 import useGetShopByCity from './hooks/useGetShopByCity'
 import useGetItemsbyCity from './hooks/useGetItemsbyCity'
 import CartPage from './pages/CartPage.jsx';
+import CheckOut from './pages/CheckOut.jsx';
 
 export const serverUrl = import.meta.env.VITE_SERVER_URL;
 function App() {
@@ -90,6 +91,10 @@ function App() {
         <Route
           path="/cart"
           element={userData ? <CartPage /> : <Navigate to="/signin" />}
+        />
+        <Route
+          path="/checkout"
+          element={userData ? <CheckOut /> : <Navigate to="/signin" />}
         />
 
       </Routes>

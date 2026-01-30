@@ -4,6 +4,16 @@ import bcrypt from "bcryptjs";
 import getToken from "../utils/token.js";
 import { sendOtpMail } from "../utils/mail.js";
 
+// --- HELPERS ---
+// Production aur Localhost dono jagah chalne ke liye cookie options
+const cookieOptions = {
+  httpOnly: true,
+  secure: true,       // 🔥 Zaroori: Render HTTPS use karta hai
+  sameSite: "none",   // 🔥 Zaroori: Vercel aur Render alag domains hain
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: "/",
+};
+
 export const signup = async (req, res) => {
   console.log("SIGNUP REQUEST BODY RECEIVED:", req.body);
   try {
@@ -35,13 +45,8 @@ export const signup = async (req, res) => {
 
     const token = await getToken(user._id);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: "/",
-    });
+    // ✅ Updated Cookie Settings
+    res.cookie("token", token, cookieOptions);
 
     return res.status(201).json(user);
   } catch (error) {
@@ -62,13 +67,8 @@ export const signIn = async (req, res) => {
 
     const token = await getToken(user._id);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: "/",
-    });
+    // ✅ Updated Cookie Settings
+    res.cookie("token", token, cookieOptions);
 
     return res.status(200).json(user);
   } catch (error) {
@@ -79,10 +79,11 @@ export const signIn = async (req, res) => {
 
 export const signOut = async (_req, res) => {
   try {
+    // Logout ke waqt bhi same settings honi chahiye tabhi clear hoga
     res.clearCookie("token", {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false,
+      secure: true,     // 🔥 Match hona chahiye
+      sameSite: "none", // 🔥 Match hona chahiye
       path: "/",
     });
 
@@ -96,7 +97,6 @@ export const signOut = async (_req, res) => {
   }
 };
 
-
 export const sendOtp = async (req, res) => {
   try {
     const { email } = req.body || {};
@@ -109,16 +109,14 @@ export const sendOtp = async (req, res) => {
 
     const otp = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit
     user.resetOtp = otp;
-    user.otpExpires = Date.now() + 5 * 60 * 1000; // <-- fixed Data.now() -> Date.now()
+    user.otpExpires = Date.now() + 5 * 60 * 1000;
     user.isOtpVerified = false;
     await user.save();
 
-    // send email (make sure sendOtpMail is implemented)
     try {
       await sendOtpMail(email, otp);
     } catch (mailErr) {
       console.error("Failed to send OTP email:", mailErr);
-      // still return success if you prefer, or propagate error:
       return res.status(500).json({ message: "Failed to send OTP email", error: mailErr.message });
     }
 
@@ -161,7 +159,6 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "User does not exist." });
     }
 
-    // Optional: verify isOtpVerified === true before allowing reset
     if (!user.isOtpVerified) {
       return res.status(400).json({ message: "OTP not verified for this user." });
     }
@@ -189,24 +186,19 @@ export const googleAuth = async (req, res) => {
         fullName,
         email,
         mobile,
-        role: role || "user", // Agar role frontend se nahi aaya toh default 'user'
-        google_auth: true,    // 🔥 YEH LINE SABSE ZAROORI HAI. Iske bina error aayega.
+        role: role || "user",
+        google_auth: true,
       });
     }
 
     const token = await getToken(user._id);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: "/",
-    });
+    // ✅ Updated Cookie Settings
+    res.cookie("token", token, cookieOptions);
 
     return res.status(200).json(user);
   } catch (error) {
-    console.error("Google Auth Error:", error); // Console log add kiya debugging ke liye
+    console.error("Google Auth Error:", error);
     return res.status(500).json({ message: `googleAuth error: ${error.message}` });
   }
 };

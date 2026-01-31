@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react'; // useState hata diya, zaroorat nahi
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { IoIosArrowBack } from "react-icons/io";
 import { useNavigate } from 'react-router-dom';
 import { FaLocationDot } from "react-icons/fa6";
@@ -6,6 +6,9 @@ import { FaSearch } from "react-icons/fa";
 import { BiCurrentLocation } from "react-icons/bi";
 import { useSelector, useDispatch } from 'react-redux';
 import axios from 'axios';
+import { MdDeliveryDining } from "react-icons/md";
+import { FaMobileAlt } from "react-icons/fa";
+import { FaCreditCard } from "react-icons/fa";
 
 // ✅ Import both actions
 import { setLocation, setAddress } from '../redux/mapSlice';
@@ -39,57 +42,90 @@ function CheckOut() {
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const { location, address } = useSelector(state => state.map);
+    const { cartItems } = useSelector(state => state.user)
+    const [paymentMethod, setPaymentMethod] = useState("cod")
     const markerRef = useRef(null);
     const apiKey = import.meta.env.VITE_GEOAPIKEY;
 
     const defaultCenter = [25.5941, 85.1376];
     const currentCenter = location?.lat && location?.lon ? [location.lat, location.lon] : defaultCenter;
 
-    // ✅ Fix 1: API Call Logic Corrected
+    // --- 1. Reverse Geocoding (Marker Drag -> Address) ---
     const getAddressByLatLng = async (lat, lng) => {
         try {
             const res = await axios.get(
                 "https://api.geoapify.com/v1/geocode/reverse",
                 {
-                    params: {
-                        lat,
-                        lon: lng,
-                        format: "json",
-                        apiKey,
-                    },
+                    params: { lat, lon: lng, format: "json", apiKey },
                 }
             );
-
-            // Response aane ke baad data nikalo
             const result = res?.data?.results?.[0];
             const formattedAddr = result?.formatted || result?.address_line2 || result?.address_line1 || "Unknown address";
-            
-            // ✅ Redux Update: Taaki input box mein address change ho jaye
             dispatch(setAddress(formattedAddr));
-            
         } catch (error) {
             console.error("GeoAPI Error:", error);
         }
     }
 
-    // ✅ Fix 2: Consolidated Drag Logic (Ek hi handler)
+    // --- 2. Marker Logic ---
     const eventHandlers = useMemo(
         () => ({
             dragend() {
                 const marker = markerRef.current;
                 if (marker != null) {
                     const { lat, lng } = marker.getLatLng();
-                    
-                    // 1. Redux Update Location
                     dispatch(setLocation({ lat, lon: lng }));
-                    
-                    // 2. Fetch New Address
                     getAddressByLatLng(lat, lng);
                 }
             },
         }),
-        [dispatch, apiKey] // Dependencies add kar di
+        [dispatch, apiKey]
     );
+
+    // --- 3. Current Location Button Logic ---
+    const getCurrentLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    dispatch(setLocation({ lat: latitude, lon: longitude }));
+                    getAddressByLatLng(latitude, longitude);
+                },
+                (error) => {
+                    console.error("Geolocation error:", error);
+                    alert("Could not extract location. Please enable location services.");
+                }
+            );
+        }
+    }
+
+    // --- 4. Forward Geocoding (Search Address -> Map Update) ---
+    const getLatLngByAddress = async () => {
+        // Agar address khali hai to API call mat karo
+        if (!address) return;
+
+        try {
+            const res = await axios.get("https://api.geoapify.com/v1/geocode/search", {
+                params: {
+                    text: address, // ✅ Redux wala address use kiya
+                    apiKey: apiKey,
+                    format: "json"
+                }
+            });
+
+            // Check karo result aya ya nahi
+            if (res.data.results && res.data.results.length > 0) {
+                const { lat, lon } = res.data.results[0];
+                // ✅ Map ko update karo nayi location se
+                dispatch(setLocation({ lat, lon }));
+            } else {
+                alert("Address not found! Try a different query.");
+            }
+
+        } catch (error) {
+            console.log("Search Error:", error);
+        }
+    }
 
     return (
         <div className='min-h-screen bg-[#fff9f6] flex items-center justify-center p-6'>
@@ -106,19 +142,19 @@ function CheckOut() {
                     </h2>
 
                     <div className='flex gap-2 mb-3'>
-                        {/* ✅ Fix 3: Controlled Input (value + onChange) */}
-                        {/* Agar drag karoge to address badlega, agar type karoge to bhi badlega */}
                         <input
                             type="text"
                             className='flex-1 border border-gray-300 rounded-lg p-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff4d2d]'
                             placeholder='Enter your Delivery Address...'
-                            value={address || ""} 
+                            value={address || ""}
+                            // ✅ User jab type karega, Redux address update hoga
                             onChange={(e) => dispatch(setAddress(e.target.value))}
                         />
-                        <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-3 py-2 rounded-lg flex items-center justify-center cursor-pointer'>
+                        {/* ✅ Button click par Search Function call hoga */}
+                        <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-3 py-2 rounded-lg flex items-center justify-center cursor-pointer' onClick={getLatLngByAddress}>
                             <FaSearch size={17} />
                         </button>
-                        <button className='bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg flex items-center justify-center cursor-pointer'>
+                        <button className='bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg flex items-center justify-center cursor-pointer' onClick={getCurrentLocation}>
                             <BiCurrentLocation size={17} />
                         </button>
                     </div>
@@ -136,8 +172,6 @@ function CheckOut() {
                                     attribution='&copy; OpenStreetMap contributors'
                                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                                 />
-
-                                {/* ✅ Single Clean Marker Component */}
                                 <Marker
                                     draggable={true}
                                     eventHandlers={eventHandlers}
@@ -152,11 +186,49 @@ function CheckOut() {
                         </div>
                     </div>
                 </section>
+
+                <section>
+                    <h2 className='text-lg font-semibold mb-3 text-gray-800'>Payment Method</h2>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                        <div className={`flex items-center gap-3 rounded-xl border p-4 text-left transition ${paymentMethod === "cod" ? "border-[#ff4d2d] bg-orange-50 shadow" : "bg-gray-200 hover:border-gray-300"}`} onClick={() => { setPaymentMethod("cod") }}>
+                            <span className='inline-flex h-10 w-10 items-center justify-center rounded-full bg-green-100'>
+                                <MdDeliveryDining className='text-green-600 text-xl' />
+                            </span>
+                            <div>
+                                <p className='font-medium text-gray-800'>Cash On Delivery</p>
+                                <p className='text-xs text-gray-500'>Pay when your food arrives.</p>
+                            </div>
+                        </div>
+                        <div className={`flex items-center gap-3 rounded-xl border p-4 text-left transition ${paymentMethod === "online" ? "border-[#ff4d2d] bg-orange-50 shadow" : "bg-gray-200 hover:border-gray-300"}`} onClick={() => { setPaymentMethod("online") }}>
+                            <span className='inline-flex h-10 w-10 items-center justify-center rounded-full bg-purple-100'>
+                                <FaMobileAlt className='text-purple-700 text-xl' />
+                            </span>
+                            <span className='inline-flex h-10 w-10 items-center justify-center rounded-full bg-blue-100'>
+                                <FaCreditCard className='text-blue-700 text-xl' />
+                            </span>
+                            <div>
+                                <p className='font-medium text-gray-800'>UPI / Credit / Debit</p>
+                                <p className='text-xs text-gray-500'>Pay Securely Online</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <h2 className='text-lg font-semibold mb-3 text-gray-800'>Order Summary</h2>
+                    <div className='rounded-xl border bg-gray-50 p-4 space-y-2'>
+                        {cartItems.map((item, index) => (
+                            <div key={index} className='flex justify-between text-sm text-gray-700'>
+                                <span>{item.name} x {item.quantity}</span>
+                                <span>₹{item.price*item.quantity}</span>
+                            </div>
+                        ))}
+                        <hr className='border-gray-200 my-2'/>
+                    </div>
+                </section>
             </div>
         </div>
     );
 }
 
 export default CheckOut;
-
-// 2:31:26

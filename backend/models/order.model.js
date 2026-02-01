@@ -3,44 +3,60 @@ import mongoose from 'mongoose';
 const shopOrderItemSchema = new mongoose.Schema({
     item: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Item'
+        ref: 'Item',
+        required: true
     },
-    price: Number,
-    quantity: Number
-}, { timestamps: true })
+    name: { type: String, required: true },
+    price: { type: Number, required: true },
+    quantity: { type: Number, required: true },
+    image: { type: String } // Optional: Agar image bhi save karni ho
+}, { timestamps: true });
 
 const shopOrderSchema = new mongoose.Schema({
     shop: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Shop'
+        ref: 'Shop',
+        required: true
     },
     owner: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        required: true
     },
     subtotal: {
         type: Number,
-        shopOrderItems: [shopOrderItemSchema]
-    }
-}, {timestamps: true })
+        required: true
+    },
+    // ✅ FIX 1: Status field add kiya (Controller me use ho raha tha)
+    status: {
+        type: String,
+        enum: ["Pending", "Accepted", "Shipped", "Delivered", "Cancelled"],
+        default: "Pending"
+    },
+    // ✅ FIX 2: Isko 'subtotal' se bahar nikaala
+    shopOrderItems: [shopOrderItemSchema] 
+}, { timestamps: true });
 
 const orderSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
+        ref: 'User',
+        required: true
     },
     paymentMethod: {
         type: String,
-        enum: ['COD', 'ONLINE'],
+        enum: ['cod', 'online'], // ✅ FIX 3: Lowercase kiya (Frontend se match karne ke liye)
         required: true
     },
     deliveryAddress: {
-        text: String,
-        latitude: Number,
-        longitude: Number
+        text: { type: String, required: true },
+        latitude: { type: Number, required: true },
+        longitude: { type: Number, required: true }
     },
-    total: {
-        type: Number
+    // ✅ FIX 4: Name change (total -> totalAmount) to match Controller
+    totalAmount: {
+        type: Number,
+        required: true
     },
     shopOrders: [shopOrderSchema]
 }, { timestamps: true });

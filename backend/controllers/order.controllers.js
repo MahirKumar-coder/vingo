@@ -65,7 +65,7 @@ export const placeOrder = async (req, res) => {
                     }
 
                     return {
-                        item: productId,  // ✅ Ab ye undefined nahi hoga
+                        item: i.id,  // ✅ Ab ye undefined nahi hoga
                         name: i.name,
                         price: i.price,
                         quantity: i.quantity,
@@ -97,3 +97,31 @@ export const placeOrder = async (req, res) => {
         return res.status(500).json({ message: error.message });
     }
 };
+
+export const getMyOrders = async (req, res) => {
+    try {
+        const user = await User.findById(req.userId)
+        if (user.role == 'user') {
+
+
+            const orders = await Order.find({ user: req.userId })
+                .sort({ createdAt: -1 })
+                .populate('shopOrders.shop', 'name')
+                .populate('shopOrders.owner', 'name email mobile')
+                .populate('shopOrders.shopOrderItems.item', 'name image price')
+
+            return res.status(200).json(orders)
+        } else if (user.role == 'owner') {
+            const orders = await Order.find({ 'shopOrders.owner': req.userId })
+                .sort({ createdAt: -1 })
+                .populate('shopOrders.shop', 'name')
+                .populate('user')
+                .populate('shopOrders.shopOrderItems.item', 'name image price')
+
+            return res.status(200).json(orders)
+        }
+    } catch (error) {
+        return res.status(500).json({ message: `get User Order error ${error}` })
+    }
+}
+

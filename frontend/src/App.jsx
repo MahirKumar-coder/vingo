@@ -18,6 +18,9 @@ import useGetShopByCity from './hooks/useGetShopByCity'
 import useGetItemsbyCity from './hooks/useGetItemsbyCity'
 import CartPage from './pages/CartPage.jsx';
 import CheckOut from './pages/CheckOut.jsx';
+import OrderPlaced from './pages/OrderPlaced.jsx';
+import MyOrders from './pages/MyOrders.jsx';
+import useGetMyOrders from './hooks/useGetMyOrders.jsx';
 
 export const serverUrl = import.meta.env.VITE_SERVER_URL;
 function App() {
@@ -29,6 +32,7 @@ function App() {
   useGetMyShop();
   useGetShopByCity();
   useGetItemsbyCity();
+  useGetMyOrders()
 
   // 2. Redux se user nikala
   const { userData } = useSelector(state => state.user)
@@ -95,6 +99,14 @@ function App() {
         <Route
           path="/checkout"
           element={userData ? <CheckOut /> : <Navigate to="/signin" />}
+        />
+        <Route
+          path="/order-placed"
+          element={userData ? <OrderPlaced /> : <Navigate to="/signin" />}
+        />
+        <Route
+          path="/my-orders"
+          element={userData ? <MyOrders /> : <Navigate to="/signin" />}
         />
 
       </Routes>

@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import MyOrders from "../pages/MyOrders";
 
 const storedUser = localStorage.getItem("user");
 
@@ -12,7 +13,8 @@ const userSlice = createSlice({
         shopInMyCity: null,
         itemsInMyCity: null,
         cartItems: [],
-        totalAmount: 0
+        totalAmount: 0,
+        MyOrders:null
     },
     reducers: {
         setUserData: (state, action) => {
@@ -77,6 +79,10 @@ const userSlice = createSlice({
         removeCartItem: (state, action) => {
             state.cartItems = state.cartItems.filter(i => i.id !== action.payload);
             state.totalAmount = state.cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+        },
+
+        setMyOrders: (state, action) => {
+            state.MyOrders = action.payload
         }
     }
 });
@@ -91,7 +97,8 @@ export const {
     setItemsInMyCity,
     addToCart,
     updateQuantity,
-    removeCartItem
+    removeCartItem,
+    setMyOrders
 } = userSlice.actions;
 
 export default userSlice.reducer;

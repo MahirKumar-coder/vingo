@@ -39,6 +39,7 @@ function Popup({ anchorRect, onClose, displayName, onLogout }) {
   const right = Math.round(window.innerWidth - anchorRect.right);
 
   const popup = (
+    
     <div
       className="fixed nav-popup"
       style={{ top: `${top}px`, right: `${right}px`, zIndex: 9999 }}
@@ -51,7 +52,7 @@ function Popup({ anchorRect, onClose, displayName, onLogout }) {
           Profile
         </button>
 
-        <button className="md:hidden text-left text-sm text-gray-700 hover:text-[#ff4d2d]">
+        <button className="md:hidden text-left text-sm text-gray-700 hover:text-[#ff4d2d]" onClick={() => navigate('my-orders')}>
           My Orders
         </button>
 
@@ -203,9 +204,9 @@ const Nav = () => {
                 <FaPlus size={20} />
               </button></>}
 
-            <div className="hidden md:flex items-center gap-2 cursor-pointer relative px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] font-medium">
-              <TbReceiptRupee size={20} />
-              <span>My Orders</span>
+            <div className="hidden md:flex items-center gap-2 cursor-pointer relative px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] font-medium" >
+              <TbReceiptRupee size={20} onClick={() => navigate('my-orders')} />
+              <span onClick={() => navigate('my-orders')}>My Orders</span>
               <span className="absolute -right-2 -top-2 text-xs font-bold text-white bg-[#ff4d2d] rounded-full px-[6px] py-[1px]">0</span>
             </div>
             <div className="md:hidden flex items-center gap-2 cursor-pointer relative px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] font-medium">
@@ -228,7 +229,7 @@ const Nav = () => {
               {/* My Order button - hidden small */}
               <button
                 className="hidden md:inline-block px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] text-sm font-medium hover:bg-[#ff4d2d]/15 transition"
-                aria-label="My Orders"
+                aria-label="My Orders" onClick={() => navigate('/my-orders')}
               >
                 My Order
               </button>

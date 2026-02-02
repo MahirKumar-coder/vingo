@@ -144,7 +144,7 @@ function CheckOut() {
 
             if(result.data.success){
                 alert("Order Placed Successfully!");
-                navigate("/order-success"); // Redirect user
+                navigate("/order-placed"); // Redirect user
             }
 
         } catch (error) {

@@ -1,7 +1,7 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
 import { IoIosArrowBack } from "react-icons/io";
-import UserOrderCard from '../components/userOrderCard';
+import UserOrderCard from '../components/UserOrderCard';
 import OwnerOrderCard from '../components/OwnerOrderCard';
 
 function MyOrders() {

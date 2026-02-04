@@ -40,8 +40,18 @@ function UserOrderCard({data}) {
               </div>
             ))}
           </div>
+          
+          <div className='flex justify-between items-center border-t pt-2'>
+            <p className='font-semibold'>shopOrder: {shopOrder.subtotal}</p>
+            <span className='text-sm font-medium text-blue-600'> {shopOrder.status}</span>
+          </div>
         </div>
       ))}
+
+      <div className='flex justify-between items-center border-t pt-2'>
+        <p className='font-semibold'>Total: ₹{data.totalAmount}</p>
+        <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-4 py-2 rounded-lg text-sm'>Tracking Order</button>
+      </div>
     </div>
   )
 }

@@ -1,5 +1,4 @@
 import { createSlice } from "@reduxjs/toolkit";
-import MyOrders from "../pages/MyOrders";
 
 const storedUser = localStorage.getItem("user");
 
@@ -14,9 +13,11 @@ const userSlice = createSlice({
         itemsInMyCity: null,
         cartItems: [],
         totalAmount: 0,
-        MyOrders:[]
+        MyOrders: []
     },
     reducers: {
+        // ... (Baaki saare reducers same rahenge) ...
+
         setUserData: (state, action) => {
             if (action.payload && action.payload.user) {
                 state.userData = action.payload.user;
@@ -47,6 +48,7 @@ const userSlice = createSlice({
             state.currentCity = null;
             state.currentState = null;
             state.currentAddress = null;
+            state.MyOrders = []; // Logout hone par orders bhi clear kar do
             localStorage.removeItem("user");
         },
 
@@ -62,9 +64,7 @@ const userSlice = createSlice({
             } else {
                 state.cartItems.push(cartItem);
             }
-            
             state.totalAmount = state.cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-            
         },
 
         updateQuantity: (state, action) => {
@@ -87,6 +87,27 @@ const userSlice = createSlice({
 
         addMyOrders: (state, action) => {
             state.MyOrders = [action.payload, ...state.MyOrders ]
+        },
+
+        // 👇 FIXED REDUCER IS HERE
+        updateOrderStatus: (state, action) => {
+            const { orderId, shopId, status } = action.payload;
+
+            // 1. Main Order dhundo
+            const order = state.MyOrders.find(o => o._id === orderId);
+
+            if (order && order.shopOrders) {
+                // 2. Us Order ke andar 'shopOrders' Array me se sahi Shop dhundo
+                const subOrder = order.shopOrders.find(so => {
+                    const currentShopId = so.shop._id || so.shop;
+                    return String(currentShopId) === String(shopId);
+                });
+
+                // 3. Agar mil gaya, to uska status update karo
+                if (subOrder) {
+                    subOrder.status = status; // ✅ Correct assignment
+                }
+            }
         }
     }
 });
@@ -103,7 +124,8 @@ export const {
     updateQuantity,
     removeCartItem,
     setMyOrders,
-    addMyOrders
+    addMyOrders,
+    updateOrderStatus
 } = userSlice.actions;
 
 export default userSlice.reducer;

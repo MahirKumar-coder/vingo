@@ -33,6 +33,12 @@ const shopOrderSchema = new mongoose.Schema({
         enum: ["Pending", "Accepted", "Shipped", "Delivered", "Cancelled"],
         default: "Pending"
     },
+
+    assignment: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'DeliveryAssignment',
+        default: null
+    },
     // ✅ FIX 2: Isko 'subtotal' se bahar nikaala
     shopOrderItems: [shopOrderItemSchema] 
 }, { timestamps: true });

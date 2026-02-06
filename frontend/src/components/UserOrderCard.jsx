@@ -1,61 +1,70 @@
-import React from 'react'
+import React from 'react';
 
-function UserOrderCard({data}) {
-  const formatDate = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    })
-  }
+// 👇 FIX: 'order' ki jagah 'data' receive karo (Parent se 'data' aa raha hai)
+function UserOrderCard({ data }) { 
   
+  // Safety Check: Agar data undefined hai to crash mat hone do
+  if (!data) return null;
+
+  const order = data; // Variable ka naam 'order' hi rakhte hain taaki neeche code na badalna pade
+
+  const getStatusBadge = (status) => {
+    const colors = {
+      "Pending": "bg-yellow-100 text-yellow-800",
+      "Preparing": "bg-blue-100 text-blue-800",
+      "Out for Delivery": "bg-purple-100 text-purple-800",
+      "Delivered": "bg-green-100 text-green-800",
+      "Cancelled": "bg-red-100 text-red-800",
+    };
+    return colors[status] || "bg-gray-100 text-gray-800";
+  };
+
   return (
-    <div className='bg-white rounded-lg shadow p-4 space-y-4'>
-      <div className='flex justify-between border-b pb-2'>
+    <div className="bg-white shadow-md rounded-lg p-4 mb-4 border border-gray-200">
+      
+      {/* Header */}
+      <div className="flex justify-between items-center border-b pb-2 mb-2">
         <div>
-          <p className='font-semibold'>
-            order #{data._id.slice(-6)}
-          </p>
-          <p className='text-sm text-gray-500'>
-            Date: {formatDate(data.createdAt)}
-          </p>
+           {/* Ab yahan crash nahi hoga kyunki 'order' defined hai */}
+           <span className="font-bold text-gray-700">Order #{order._id?.slice(-6)}</span>
+           <p className="text-xs text-gray-500">
+             {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : "Date N/A"}
+           </p>
         </div>
-        <div className='text-right'>
-          <p>{data.paymentMethod?.toUpperCase()}</p>
-          <p className='font-medium text-blue-600'>{data.shopOrders?.[0].status}</p>
+        <div className="text-sm font-semibold text-gray-600">
+          Total: ₹{order.totalAmount}
         </div>
       </div>
 
-      {data.shopOrders.map((shopOrder, index) => (
-        <div className='border rounded-lg p-3 bg-[#fffaf7] space-y-3' key={index}>
-          <p>{shopOrder.shop.name}</p>
+      {/* Shop-wise Status Section */}
+      <div className="space-y-3">
+        {order.shopOrders && order.shopOrders.map((shopOrder, index) => (
+          <div key={index} className="bg-gray-50 p-3 rounded-md">
+            
+            <div className="flex justify-between items-center mb-2">
+              <h4 className="font-semibold text-sm text-gray-800">
+                {shopOrder.shop?.name || "Shop Name"}
+              </h4>
+              <span className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusBadge(shopOrder.status)}`}>
+                {shopOrder.status}
+              </span>
+            </div>
 
-          <div className='flex space-x-4 overflow-x-auto pb-2'>
-            {shopOrder.shopOrderItems.map((item, index) => (
-              <div key={index} className='flex-shrink-0 w-40 border rounded-lg p-2 bg-white'>
-                <img src={item.image} alt="" className='w-full h-24 object-cover rounded' />
-                <p className='text-sm font-semibold mt-1'>{item.name}</p>
-                <p className='text-xs text-gray-500'>₹{item.price} x {item.quantity}</p>
-              </div>
-            ))}
-          </div>
-          
-          <div className='flex justify-between items-center border-t pt-2'>
-            <p className='font-semibold'>shopOrder: {shopOrder.subtotal}</p>
-            <span className='text-sm font-medium text-blue-600'> {shopOrder.status}</span>
-          </div>
-        </div>
-      ))}
+            <div className="space-y-1 pl-2 border-l-2 border-gray-300">
+              {shopOrder.shopOrderItems.map((item, idx) => (
+                <div key={idx} className="flex justify-between text-sm text-gray-600">
+                  <span>{item.quantity} x {item.name}</span>
+                  <span>₹{item.price}</span>
+                </div>
+              ))}
+            </div>
 
-      <div className='flex justify-between items-center border-t pt-2'>
-        <p className='font-semibold'>Total: ₹{data.totalAmount}</p>
-        <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-4 py-2 rounded-lg text-sm'>Tracking Order</button>
+          </div>
+        ))}
       </div>
+
     </div>
-  )
+  );
 }
 
-export default UserOrderCard
-
-// 5:38:39
+export default UserOrderCard;

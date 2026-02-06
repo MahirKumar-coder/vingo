@@ -1,9 +1,12 @@
 import axios from 'axios';
-import React, { useState } from 'react'; // 👈 useState import kiya
-import { useSelector } from 'react-redux';
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { updateOrderStatus } from '../redux/userSlice';
+import { serverUrl } from '../App'; // 👈 Make sure to import serverUrl
 
 function OwnerOrderCard({ data }) {
   const { userData } = useSelector((state) => state.user);
+  const dispatch = useDispatch();
 
   // Safety Checks
   if (!userData) return <div className="p-2">Loading...</div>;
@@ -17,21 +20,54 @@ function OwnerOrderCard({ data }) {
 
   if (!myShopOrder) return null;
 
-  // 2. 👇 Status ke liye Local State banaya
-  // Initial value database se aayegi
+  // 2. Local State
   const [status, setStatus] = useState(myShopOrder.status);
 
-  // 3. 👇 Change Handle karne ka function
-  const handleUpdateStatus = async (orderId, shopId, status) => {
+  // 3. Update Function
+  // 3. Update Function (Fixed URL & Method)
+  const handleUpdateStatus = async (e) => {
+    const newStatus = e.target.value;
+
+    // 1. Optimistic UI Update (Turant UI change)
+    setStatus(newStatus);
+
+    // 2. Correct Shop ID logic
+    // Shop object ho sakta hai ya string ID, dono handle karo:
+    const shopId = myShopOrder.shop._id || myShopOrder.shop;
+
     try {
-      const result = await axios.post(`${serverUrl}/api/order/update-status/${orderId}/${shopId}`, {status}, {withCredentials: true})
-      console.log(result.data);
-      
+      // 👇 FIX: Method 'POST' kiya aur URL me ShopID lagaya
+      await axios.post(
+        `${serverUrl}/api/order/update-status/${data._id}/${shopId}`,
+        { status: newStatus }, // Body me sirf status bhejo
+        { withCredentials: true }
+      );
+
+      // Redux Update (Global State Update)
+      dispatch(updateOrderStatus({
+        orderId: data._id,
+        shopId: shopId,
+        status: newStatus
+      }));
+
+      console.log("✅ Status Updated via API");
+
     } catch (error) {
-      console.log(error);
-      
+      console.log("Update failed:", error);
+      // Agar fail ho jaye to wapas purana status set karo
+      setStatus(myShopOrder.status);
+      alert("Failed to update status");
     }
   };
+
+  // Status Color Helper
+  const getStatusColor = (st) => {
+    if (st === 'Pending') return 'text-yellow-600 border-yellow-200 bg-yellow-50';
+    if (st === 'Preparing') return 'text-blue-600 border-blue-200 bg-blue-50';
+    if (st === 'Out for Delivery') return 'text-purple-600 border-purple-200 bg-purple-50';
+    if (st === 'Delivered') return 'text-green-600 border-green-200 bg-green-50';
+    return 'text-gray-600 border-gray-200';
+  }
 
   return (
     <div className='bg-white rounded-lg shadow p-4 space-y-4 mb-4 border-l-4 border-blue-500'>
@@ -43,20 +79,17 @@ function OwnerOrderCard({ data }) {
           </p>
         </div>
 
-        {/* 👇 YAHAN BADLAV KIYA HAI: SELECT TAG */}
         <div className='text-right'>
+          {/* 👇 FIXED SELECT LOGIC */}
           <select
-
-            onChange={(e) => handleUpdateStatus(data._id, data.shopOrder.shop._id, e.target.value)}
-            className={`font-medium text-sm border rounded p-1 outline-none cursor-pointer
-              ${status === 'Pending' ? 'text-yellow-600 border-yellow-200 bg-yellow-50' : ''}
-              ${status === 'Preparing' ? 'text-blue-600 border-blue-200 bg-blue-50' : ''}
-              ${status === 'Out for Delivery' ? 'text-green-600 border-green-200 bg-green-50' : ''}
-            `}
+            value={status} // Value bind ki
+            onChange={handleUpdateStatus} // Function simplify kiya
+            className={`font-medium text-sm border rounded p-1 outline-none cursor-pointer ${getStatusColor(status)}`}
           >
             <option value="Pending">Pending</option>
             <option value="Preparing">Preparing</option>
-            <option value="Out for Delivery">Out of Delivery</option>
+            <option value="Out for Delivery">Out for Delivery</option>
+            <option value="Delivered">Delivered</option>
           </select>
 
           <p className='text-xs text-gray-500 mt-1'>{data.paymentMethod}</p>

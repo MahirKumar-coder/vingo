@@ -21,6 +21,7 @@ import CheckOut from './pages/CheckOut.jsx';
 import OrderPlaced from './pages/OrderPlaced.jsx';
 import MyOrders from './pages/MyOrders.jsx';
 import useGetMyOrders from './hooks/useGetMyOrders.jsx';
+import useUpdateLocation from './hooks/useUpdateLocation.jsx';
 
 export const serverUrl = import.meta.env.VITE_SERVER_URL;
 function App() {
@@ -33,6 +34,7 @@ function App() {
   useGetShopByCity();
   useGetItemsbyCity();
   useGetMyOrders()
+  useUpdateLocation()
 
   // 2. Redux se user nikala
   const { userData } = useSelector(state => state.user)

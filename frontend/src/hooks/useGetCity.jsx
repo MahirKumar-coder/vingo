@@ -7,62 +7,64 @@ import { setAddress, setLocation } from "../redux/mapSlice";
 function useGetCity() {
   const dispatch = useDispatch();
   const { userData } = useSelector((state) => state.user);
-  // Ensure .env file has VITE_GEOAPIKEY
   const apiKey = import.meta.env.VITE_GEOAPIKEY; 
 
   useEffect(() => {
-    if (!userData) return;
+    // Agar userData nahi hai ya location permission nahi hai to ruk jao
     if (!navigator.geolocation) return;
     
-    // Agar city pehle se saved hai, toh API call mat karo (Optimization)
-    if (userData.city) return; 
+    // Agar city pehle se hai to mat call karo
+    if (userData?.city) return; 
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
           
-          // Map slice me location set kar rahe hain
           dispatch(setLocation({ lat: latitude, lon: longitude }));
 
           const res = await axios.get(
-            "https://api.geoapify.com/v1/geocode/reverse",
+            `https://api.geoapify.com/v1/geocode/reverse`,
             {
               params: {
                 lat: latitude,
                 lon: longitude,
                 format: "json",
-                apiKey,
+                apiKey: apiKey,
               },
             }
           );
 
-          // Data extraction
+          // 👇 DATA EXTRACTION FIX
+          // Geoapify ka response structure: res.data.results array hota hai
           const result = res?.data?.results?.[0];
 
           if (result) {
-            const city = result.city || result.county || result.state || "Unknown";
-            const state = result.state || "Unknown";
-            const address = result.formatted || result.address_line2 || result.address_line1 || "Unknown address";
+            console.log("📍 Geoapify Result:", result); // Debugging ke liye
 
+            // 👇 YAHAN GALTI THI (Ab Sahi Hai):
+            // 'result' khud hi wo object hai, uske andar direct keys hoti hain
+            const city = result.city || result.county || result.suburb || "Unknown City";
+            const state = result.state || "Unknown State";
+            const address = result.formatted || result.address_line2 || result.address_line1 || "Unknown Address";
+
+            // Redux me dispatch karo
             dispatch(setCurrentCity(city));
             dispatch(setCurrentState(state));
             dispatch(setCurrentAddress(address));
             
-            // ✅ Fixed Log: Seedha result print karo
-            dispatch(setAddress(result.formatted || result.address_line2 || result.address_line1 || "Unknown address")) 
+            // Map slice update
+            dispatch(setAddress(address)); 
           }
         } catch (err) {
-          console.error("Geo API error:", err);
+          console.error("❌ Geo API error:", err);
         }
       },
       (err) => {
-        console.warn("Location denied:", err.message);
+        console.warn("⚠️ Location denied:", err.message);
       }
     );
-  }, [userData, apiKey, dispatch]); // Dependencies sahi hain
+  }, [userData, apiKey, dispatch]); 
 }
 
 export default useGetCity;
-
-// 1:55:57

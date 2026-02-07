@@ -18,21 +18,32 @@ export const getCurrentUser = async (req, res) => {
 
 export const updateUserLocation = async (req, res) => {
     try {
-        const { lat, lon } = req.body
+        const { lat, lon } = req.body;
+        
+        // 1. Database Update (Ye sahi hai)
         const user = await User.findByIdAndUpdate(req.userId, {
             location: {
                 type: 'Point',
-                coordinates: [lon, lat] 
+                coordinates: [lon, lat] // Note: MongoDB me [Longitude, Latitude] hota hai
             }
-        }, {new: true})
+        }, { new: true });
+
         if (!user) {
-            return res.status(401).json({ message: 'User not found'})
+            return res.status(401).json({ message: 'User not found' });
         }
 
-        return res.status(200).json({ message: 'location updated'})
+        // 👇 2. YAHAN CHANGE KARO: Response me Data bhejo
+        // Filhal hum hardcode kar rahe hain taaki error hat jaye.
+        // Baad me yahan Real Geocoding API lagegi.
+        
+        return res.status(200).json({ 
+            message: 'location updated',
+            city: "Patna",       // <--- Ye Frontend dhoond raha hai
+            state: "Bihar",
+            address: "Frazer Road, Patna, Bihar" 
+        });
+
     } catch (error) {
-        return res.status(500).json({ message: `Update location user ${error}` })
+        return res.status(500).json({ message: `Update location user ${error}` });
     }
 }
-
-// 7:16:59

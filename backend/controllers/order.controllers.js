@@ -1,6 +1,7 @@
 import Shop from "../models/shop.model.js";
 import Order from "../models/order.model.js";
 import User from "../models/user.model.js";
+import DeliveryAssignment from "../models/deliveryAssignment.model.js";
 
 // 1. PLACE ORDER (No Changes needed, looks good)
 export const placeOrder = async (req, res) => {
@@ -116,7 +117,7 @@ export const updateOrderStatus = async (req, res) => {
 
         // 👇 FIX: Use 'findOneAndUpdate' with Positional Operator ($)
         // Ye sabse safe tarika hai array ke andar update karne ka
-        const order = await Order.findOneAndUpdate(
+        const shopOrder = await Order.findOneAndUpdate(
             { 
                 _id: orderId, 
                 "shopOrders.shop": shopId 
@@ -127,14 +128,56 @@ export const updateOrderStatus = async (req, res) => {
             { new: true } // Returns updated doc
         );
 
-        if (!order) {
+        if (!shopOrder) {
             return res.status(404).json({ message: "Order or Shop not found" });
+        }
+
+        shopOrder.status = status
+        if (status == 'out of delivery' || !shopOrder.assignment) {
+            const { longitude, latitude } = order.deliveryAddress
+            const nearByDeliveryBoys = await User.find({
+                role: "deliveryBoy",
+                location: {
+                    $near: {
+                        $geometry: {type: "Point", coordinates: [Number(longitude),
+                            Number(latitude)
+                        ]},
+                        $maxDistance: 5000
+                    }
+                }
+            })
+
+            const nearByIds = nearByDeliveryBoys.map(b => b._id)
+            const busyIds = await DeliveryAssignment.find({
+                assignedTo: {$in: nearByIds},
+                status: {$nin:['broadcasted', 'assigned', 'completed']}
+            }).distinct("assignedTo")
+
+            const busyIdSet = new Set(busyIds.map(id => String(id)))
+
+            const availableBoys = nearByDeliveryBoys.filter( b => !busyIdSet.has(b._id))
+            const candidates = availableBoys.map(b => b._id)
+
+            if (candidates.length == 0) {
+                await order.save()
+                return res.json({
+                    message: "order status updated but there is no available delivery boy."
+                })
+            }
+
+            const deliveryAssignment = await DeliveryAssignment.create({
+                order: order._id,
+                shop: shopOrder.shop,
+                shopOrderId: shopOrder._id,
+                broadcastedTo: candidates,
+                status: "broadcasted"
+            })
         }
 
         return res.status(200).json({ 
             success: true, 
             message: "Status Updated", 
-            order // Updated order bhejo taaki frontend update ho sake
+            shopOrder // Updated order bhejo taaki frontend update ho sake
         });
 
     } catch (error) {
@@ -142,3 +185,5 @@ export const updateOrderStatus = async (req, res) => {
         return res.status(500).json({ message: `order status error ${error}` });
     }
 };
+
+// 8:03:07

@@ -27,20 +27,27 @@ const shopOrderSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
-    // ✅ FIX 1: Status field add kiya (Controller me use ho raha tha)
+
+    // 👇👇 UPDATE HERE 👇👇
     status: {
         type: String,
-        enum: ["Pending", "Accepted", "Shipped", "Delivered", "Cancelled"],
+        // Frontend ke dropdown se match hona chahiye
+        enum: ["Pending", "Accepted", "Preparing", "Out for Delivery", "Delivered", "Cancelled"],
         default: "Pending"
     },
+    // 👆👆 UPDATE END 👆👆
 
     assignment: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'DeliveryAssignment',
         default: null
     },
-    // ✅ FIX 2: Isko 'subtotal' se bahar nikaala
-    shopOrderItems: [shopOrderItemSchema] 
+
+    assignedDeliveryBoy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+    },
+    shopOrderItems: [shopOrderItemSchema]
 }, { timestamps: true });
 
 const orderSchema = new mongoose.Schema({

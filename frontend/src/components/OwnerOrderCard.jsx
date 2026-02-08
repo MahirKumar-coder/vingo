@@ -2,73 +2,93 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateOrderStatus } from '../redux/userSlice';
-import { serverUrl } from '../App'; // 👈 Make sure to import serverUrl
+import { serverUrl } from '../App'; 
 
 function OwnerOrderCard({ data }) {
   const { userData } = useSelector((state) => state.user);
   const dispatch = useDispatch();
 
-  // Safety Checks
-  if (!userData) return <div className="p-2">Loading...</div>;
-  if (!data || !data.shopOrders) return null;
-
-  // 1. Apna Order Dhundo
-  const myShopOrder = data.shopOrders.find((shopOrder) => {
+  // ---------------------------------------------------------
+  // STEP 1: Sabse pehle Data Calculate karo (State banane se pehle)
+  // ---------------------------------------------------------
+  
+  // Safety check: Agar data hi nahi hai to crash mat hone do
+  const safeShopOrders = data?.shopOrders || [];
+  
+  const myShopOrder = safeShopOrders.find((shopOrder) => {
     const ownerId = shopOrder.owner?._id || shopOrder.owner;
-    return String(ownerId) === String(userData._id);
+    // Optional chaining (?.) lagaya taaki userData null ho to crash na kare
+    return String(ownerId) === String(userData?._id);
   });
 
-  if (!myShopOrder) return null;
+  // ---------------------------------------------------------
+  // STEP 2: State Define karo (Hooks Always at Top)
+  // ---------------------------------------------------------
 
-  // 2. Local State
-  const [status, setStatus] = useState(myShopOrder.status);
+  // Yahan hum ?. (optional chaining) use kar rahe hain taaki agar 
+  // myShopOrder undefined ho, to code phate nahi, bas default value lele.
+  const [status, setStatus] = useState(myShopOrder?.status || 'Pending');
+  const [assignedBoy, setAssignedBoy] = useState(myShopOrder?.assignedDeliveryBoy || null);
+  const [availableBoys, setAvailableBoys] = useState([]);
 
-  // 3. Update Function
-  // 3. Update Function (Fixed URL & Method)
+  // ---------------------------------------------------------
+  // STEP 3: Ab Safety Checks lagao (Hooks ke baad)
+  // ---------------------------------------------------------
+  if (!userData) return <div className="p-2">Loading User...</div>;
+  if (!data || !myShopOrder) return null; // Agar ye order mera nahi hai to mat dikhao
+
+  // ---------------------------------------------------------
+  // STEP 4: Functions
+  // ---------------------------------------------------------
   const handleUpdateStatus = async (e) => {
     const newStatus = e.target.value;
+    const oldStatus = status; 
 
-    // 1. Optimistic UI Update (Turant UI change)
+    // Optimistic UI Update
     setStatus(newStatus);
 
-    // 2. Correct Shop ID logic
-    // Shop object ho sakta hai ya string ID, dono handle karo:
     const shopId = myShopOrder.shop._id || myShopOrder.shop;
 
     try {
-      // 👇 FIX: Method 'POST' kiya aur URL me ShopID lagaya
-      await axios.post(
+      const response = await axios.post(
         `${serverUrl}/api/order/update-status/${data._id}/${shopId}`,
-        { status: newStatus }, // Body me sirf status bhejo
+        { status: newStatus }, 
         { withCredentials: true }
       );
 
-      // Redux Update (Global State Update)
       dispatch(updateOrderStatus({
         orderId: data._id,
         shopId: shopId,
         status: newStatus
       }));
 
-      console.log("✅ Status Updated via API");
+      if (response.data.success) {
+          if (response.data.assignedDeliveryBoy) {
+              setAssignedBoy(response.data.assignedDeliveryBoy);
+          }
+          if (response.data.availableBoys) {
+              setAvailableBoys(response.data.availableBoys);
+          }
+      }
 
     } catch (error) {
-      console.log("Update failed:", error);
-      // Agar fail ho jaye to wapas purana status set karo
-      setStatus(myShopOrder.status);
-      alert("Failed to update status");
+      console.error("Update failed:", error);
+      setStatus(oldStatus);
+      alert("Failed to update status. Please try again.");
     }
   };
 
-  // Status Color Helper
   const getStatusColor = (st) => {
     if (st === 'Pending') return 'text-yellow-600 border-yellow-200 bg-yellow-50';
     if (st === 'Preparing') return 'text-blue-600 border-blue-200 bg-blue-50';
-    if (st === 'Out for Delivery') return 'text-purple-600 border-purple-200 bg-purple-50';
+    if (st === 'Out for Delivery') return 'text-purple-600 border-purple-200 bg-purple-50'; // Spelling Match ✅
     if (st === 'Delivered') return 'text-green-600 border-green-200 bg-green-50';
     return 'text-gray-600 border-gray-200';
   }
 
+  // ---------------------------------------------------------
+  // STEP 5: UI Render
+  // ---------------------------------------------------------
   return (
     <div className='bg-white rounded-lg shadow p-4 space-y-4 mb-4 border-l-4 border-blue-500'>
       <div className='flex justify-between border-b pb-2'>
@@ -80,10 +100,9 @@ function OwnerOrderCard({ data }) {
         </div>
 
         <div className='text-right'>
-          {/* 👇 FIXED SELECT LOGIC */}
           <select
-            value={status} // Value bind ki
-            onChange={handleUpdateStatus} // Function simplify kiya
+            value={status}
+            onChange={handleUpdateStatus}
             className={`font-medium text-sm border rounded p-1 outline-none cursor-pointer ${getStatusColor(status)}`}
           >
             <option value="Pending">Pending</option>
@@ -95,6 +114,34 @@ function OwnerOrderCard({ data }) {
           <p className='text-xs text-gray-500 mt-1'>{data.paymentMethod}</p>
         </div>
       </div>
+
+      {/* DELIVERY DETAILS BOX */}
+      {status === 'Out for Delivery' && (
+        <div className='mt-3 p-3 border rounded-lg bg-orange-50 text-sm'>
+            <p className="font-semibold text-orange-700 mb-2">🚚 Delivery Details</p>
+            
+            {assignedBoy ? (
+            <div className="bg-white p-2 rounded shadow-sm">
+                <p className="font-bold text-gray-800">👤 {assignedBoy.fullName}</p>
+                <p className="text-gray-600">📞 {assignedBoy.mobile}</p>
+                <p className="text-xs text-green-600 font-semibold mt-1">● Assigned Successfully</p>
+            </div>
+            ) : (
+            <p className="text-red-500 animate-pulse">Searching for nearby delivery boys...</p>
+            )}
+
+            {availableBoys.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-orange-200">
+                    <p className="font-bold text-xs text-gray-500 mb-1">Nearby Available:</p>
+                    {availableBoys.map(boy => (
+                    <span key={boy.id} className="block text-xs text-gray-600">
+                        • {boy.fullName} ({boy.mobile})
+                    </span>
+                    ))}
+                </div>
+            )}
+        </div>
+        )}
 
       <div className='space-y-2'>
         {myShopOrder.shopOrderItems.map((item, index) => (

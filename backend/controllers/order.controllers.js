@@ -237,3 +237,31 @@ export const updateOrderStatus = async (req, res) => {
         return res.status(500).json({ message: `Order status error: ${error.message}` });
     }
 };
+
+export const getDeliveryBoyAssignment = async (req, res) => {
+    try {
+        const deliveryBoyId = req.userId
+        const assignment = await DeliveryAssignment.find({
+            broadcastedTo: deliveryBoyId,
+            status: 'broadcasted'
+        })
+        .populate('order')
+        .populate('shop')
+
+        const formated = assignment.map(a => ({
+            assignmentId: a._id,
+            orderId: a.order._id,
+            shopName: a.shop.name,
+            deliveryAddress: a.order.deliveryAddress,
+            items: a.order.shopOrders.find(so => so._id == a.shopOrderId).
+            shopOrderItems || [],
+            subtotal: a.order.shopOrders.find(so => so._id == a.shopOrderId)?.subtotal
+        }))
+
+        return res.status(200).json(formated)
+    } catch (error) {
+        return res.status(500).json({ message: `Get Assignment error: ${error.message}` });
+    }
+}
+
+// 8:55:48

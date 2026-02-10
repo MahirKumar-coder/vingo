@@ -253,9 +253,10 @@ export const getDeliveryBoyAssignment = async (req, res) => {
             orderId: a.order._id,
             shopName: a.shop.name,
             deliveryAddress: a.order.deliveryAddress,
-            items: a.order.shopOrders.find(so => so._id == a.shopOrderId).
+            items: a.order.shopOrders.find(so => so._id.equals(a.shopOrderId)).
             shopOrderItems || [],
-            subtotal: a.order.shopOrders.find(so => so._id == a.shopOrderId)?.subtotal
+            subtotal: a.order.shopOrders.find(so => so._id.equals(a.shopOrderId))?.
+            subtotal
         }))
 
         return res.status(200).json(formated)

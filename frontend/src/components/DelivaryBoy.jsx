@@ -10,11 +10,6 @@ const DelivaryBoy = () => {
   // ✅ FIX 1: Initial state ko null ki jagah empty array [] rakho
   const [availableAssignments, setAvailableAssignments] = useState([])
 
-  // ✅ FIX 2: Page load hone par API call karne ke liye useEffect
-  useEffect(() => {
-    getAssignment()
-  }, [])
-
   const getAssignment = async () => {
     try {
       const res = await axios.get(`${serverUrl}/api/order/get-assignments`, { withCredentials: true })
@@ -27,6 +22,23 @@ const DelivaryBoy = () => {
       console.log(error)
     }
   }
+
+  const acceptOrder = async () => {
+    try {
+      const res = await axios.get(`${serverUrl}/api/order/accept-order/${assignmentId}`, { withCredentials: true })
+      console.log(result.data);
+      
+    } catch (error) {
+      console.log(error);
+      
+    }
+  }
+
+  useEffect(() => {
+    getAssignment()
+  }, [])
+
+
 
   return (
     <div className='w-screen min-h-screen flex flex-col gap-5 items-center bg-[#fff9f6] overflow-y-auto'>
@@ -55,7 +67,7 @@ const DelivaryBoy = () => {
                   <p className='text-sm text-gray-500'><span className='font-semibold'>Delivery Address:</span> {a?.deliveryAddress.text}</p>
                   <p className='text-xs text-gray-400'>{a.items.length} items | {a.subtotal}</p>
                 </div>
-                <button className='bg-orange-500 text-white px-4 py-1 rounded-lg text-sm hover:bg-orange-600'>Accept</button>
+                <button className='bg-orange-500 text-white px-4 py-1 rounded-lg text-sm hover:bg-orange-600' onClick={() => acceptOrder(a.assignmentId)}>Accept</button>
               </div>
             ))
           ) : (

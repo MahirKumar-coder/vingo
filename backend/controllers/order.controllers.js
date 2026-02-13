@@ -265,4 +265,41 @@ export const getDeliveryBoyAssignment = async (req, res) => {
     }
 }
 
-// 9:24:00
+export const acceptOrder = async (req, res) => {
+    try {
+        const { assignmentId } = req.params
+        const assignment = await DeliveryAssignment.findById(assignmentId)
+        if (!assignmentId) {
+            return res.status(400).json({ message: 'assignment is expired'})
+        }
+        const alreadyAssigned = await DeliveryAssignment.findOne({
+            assignedTo: req.userId,
+            status: { $nin: ['brodcasted', 'completed'] }
+        })
+
+        if (alreadyAssigned) {
+            return res.status(400).json({ message: 'You are already assigned to another order'})
+        }
+
+        assignment.assignedTo = req.userId
+        assignment.status = 'assigned'
+        assignment.acceptedAt = new Date()
+        await assignment.save()
+
+        const order = await Order.findById(assignment.order)
+        if (!order) {
+            return res.status(400).json({ message: 'Order not found'})
+        }
+
+        const shopOrder = order.shopOrders.id(assignment.shopOrder)
+        shopOrder.assignedDeliveryBoy = req.userId
+        await order.save()
+
+        return res.status(200).json({ message: 'Order accepted'})
+
+    } catch (error) {
+        return res.status(500).json({ message: `Accept order error: ${error.message}` });
+    }
+}
+
+// 9:53:31

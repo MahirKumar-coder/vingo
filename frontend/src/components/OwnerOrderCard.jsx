@@ -2,7 +2,7 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateOrderStatus } from '../redux/userSlice';
-import { serverUrl } from '../App'; 
+import { serverUrl } from '../App';
 
 function OwnerOrderCard({ data }) {
   const { userData } = useSelector((state) => state.user);
@@ -11,10 +11,10 @@ function OwnerOrderCard({ data }) {
   // ---------------------------------------------------------
   // STEP 1: Sabse pehle Data Calculate karo (State banane se pehle)
   // ---------------------------------------------------------
-  
+
   // Safety check: Agar data hi nahi hai to crash mat hone do
   const safeShopOrders = data?.shopOrders || [];
-  
+
   const myShopOrder = safeShopOrders.find((shopOrder) => {
     const ownerId = shopOrder.owner?._id || shopOrder.owner;
     // Optional chaining (?.) lagaya taaki userData null ho to crash na kare
@@ -42,7 +42,7 @@ function OwnerOrderCard({ data }) {
   // ---------------------------------------------------------
   const handleUpdateStatus = async (e) => {
     const newStatus = e.target.value;
-    const oldStatus = status; 
+    const oldStatus = status;
 
     // Optimistic UI Update
     setStatus(newStatus);
@@ -52,7 +52,7 @@ function OwnerOrderCard({ data }) {
     try {
       const response = await axios.post(
         `${serverUrl}/api/order/update-status/${data._id}/${shopId}`,
-        { status: newStatus }, 
+        { status: newStatus },
         { withCredentials: true }
       );
 
@@ -63,12 +63,12 @@ function OwnerOrderCard({ data }) {
       }));
 
       if (response.data.success) {
-          if (response.data.assignedDeliveryBoy) {
-              setAssignedBoy(response.data.assignedDeliveryBoy);
-          }
-          if (response.data.availableBoys) {
-              setAvailableBoys(response.data.availableBoys);
-          }
+        if (response.data.assignedDeliveryBoy) {
+          setAssignedBoy(response.data.assignedDeliveryBoy);
+        }
+        if (response.data.availableBoys) {
+          setAvailableBoys(response.data.availableBoys);
+        }
       }
 
     } catch (error) {
@@ -118,30 +118,31 @@ function OwnerOrderCard({ data }) {
       {/* DELIVERY DETAILS BOX */}
       {status === 'Out for Delivery' && (
         <div className='mt-3 p-3 border rounded-lg bg-orange-50 text-sm'>
-            <p className="font-semibold text-orange-700 mb-2">🚚 Delivery Details</p>
-            
-            {assignedBoy ? (
-            <div className="bg-white p-2 rounded shadow-sm">
-                <p className="font-bold text-gray-800">👤 {assignedBoy.fullName}</p>
-                <p className="text-gray-600">📞 {assignedBoy.mobile}</p>
-                <p className="text-xs text-green-600 font-semibold mt-1">● Assigned Successfully</p>
-            </div>
-            ) : (
-            <p className="text-red-500 animate-pulse">Searching for nearby delivery boys...</p>
-            )}
+          <p className="font-semibold text-orange-700 mb-2">🚚 Delivery Details</p>
 
-            {availableBoys.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-orange-200">
-                    <p className="font-bold text-xs text-gray-500 mb-1">Nearby Available:</p>
-                    {availableBoys.map(boy => (
-                    <span key={boy.id} className="block text-xs text-gray-600">
-                        • {boy.fullName} ({boy.mobile})
-                    </span>
-                    ))}
-                </div>
-            )}
+          {assignedBoy ? (
+            <div className="bg-white p-2 rounded shadow-sm">
+              {data.shopOrders.assignedDeliveryBoy?<p>Assigned Delivery Boy:</p>:<p>Available Delivery Boy:</p>}
+              <p className="font-bold text-gray-800">👤 {assignedBoy.fullName}</p>
+              <p className="text-gray-600">📞 {assignedBoy.mobile}</p>
+              <p className="text-xs text-green-600 font-semibold mt-1">● Assigned Successfully</p>
+            </div>
+          ) : data.shopOrders.assignedDeliveryBoy ? <div>{data.shopOrder.assignedBoy.fullName}</div> :
+            <p className="text-red-500 animate-pulse">Searching for nearby delivery boys...</p>
+          }
+
+          {availableBoys.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-orange-200">
+              <p className="font-bold text-xs text-gray-500 mb-1">Nearby Available:</p>
+              {availableBoys.map(boy => (
+                <span key={boy.id} className="block text-xs text-gray-600">
+                  • {boy.fullName} ({boy.mobile})
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-        )}
+      )}
 
       <div className='space-y-2'>
         {myShopOrder.shopOrderItems.map((item, index) => (

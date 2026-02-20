@@ -11,6 +11,7 @@ const DelivaryBoy = () => {
   // ✅ FIX 1: Initial state ko null ki jagah empty array [] rakho
   const [availableAssignments, setAvailableAssignments] = useState([])
   const [currentOrder, setCurrentOrder] = useState(null)
+  const [showOtpBox, setShowOtpBox] = useState(false)
 
   const getAssignment = async () => {
     try {
@@ -54,12 +55,19 @@ const DelivaryBoy = () => {
   const getCurrentOrder = async () => {
     try {
       const result = await axios.get(`${serverUrl}/api/order/get-current-order`, { withCredentials: true })
-      // API se result.data.order milega
+
+      // ✅ STEP 1: Yahan console.log lagao
+      console.log("MERA ORDER DATA:", result.data.order);
+
       setCurrentOrder(result.data.order);
     } catch (error) {
       console.log(error);
       setCurrentOrder(null);
     }
+  }
+
+  const handleSendOtp = (e) => {
+    setShowOtpBox(true)
   }
 
   useEffect(() => {
@@ -116,6 +124,11 @@ const DelivaryBoy = () => {
         </div>
 
         <DeliveryBoyTracking data={currentOrder} />
+        {!showOtpBox ? <button className='mt-4 w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md hover:bg-green-600 active:scale-95 transition-all duration-200' onClick={handleSendOtp}>
+          Mark As Delivered
+        </button> : <div className='mt-4 p-4 border rounded-xl bg-gray-50'>
+          <p className='text-sm font-semibold mb-2'>Enter Otp send to <span className='text-orange-500'>{currentOrder?.user?.fullName || "Customer"}</span></p>
+        </div>}
       </div>}
 
     </div>
@@ -124,4 +137,4 @@ const DelivaryBoy = () => {
 
 export default DelivaryBoy
 
-// 9:12:21
+// 10:51:59

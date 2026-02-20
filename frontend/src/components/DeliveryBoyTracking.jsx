@@ -3,14 +3,14 @@ import scooter from '../assets/scooter.png'
 import home from '../assets/home.png'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 
 const deliveryBoyIcon = new L.Icon({
     iconUrl: scooter,
     iconSize: [40, 40],
     iconAnchor: [20, 40]
 })
-const cutomerIcon = new L.Icon({
+const customerIcon = new L.Icon({
     iconUrl: home,
     iconSize: [40, 40],
     iconAnchor: [20, 40]
@@ -45,6 +45,11 @@ function DeliveryBoyTracking({ data }) {
                 <Marker position={[deliveryBoyLat, deliveryBoylon]} icon={deliveryBoyIcon}>
                     <Popup>Delivery Boy</Popup>
                 </Marker>
+                <Marker position={[customerLat, customerlon]} icon={customerIcon}>
+                    <Popup>Delivery Boy</Popup>
+                </Marker>
+
+                <Polyline positions={path} color='orange' weight={4} />
             </MapContainer>
         </div>
     )

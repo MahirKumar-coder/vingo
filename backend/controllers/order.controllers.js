@@ -242,24 +242,24 @@ export const updateOrderStatus = async (req, res) => {
 export const getDeliveryBoyAssignment = async (req, res) => {
     try {
         const deliveryBoyId = req.userId;
-        
+
         // FIX: Find object sahi kiya
         const assignments = await DeliveryAssignment.find({
             broadcastedTo: deliveryBoyId,
             status: 'broadcasted'
         })
-        .populate('order')
-        .populate('shop');
+            .populate('order')
+            .populate('shop');
 
         // Agar koi assignment na ho to khaali array bhejo
         if (!assignments || assignments.length === 0) {
-            return res.status(200).json([]); 
+            return res.status(200).json([]);
         }
 
         const formatted = assignments.map(a => {
             // Target shop order dhundo
             const targetShopOrder = a.order.shopOrders.find(so => String(so._id) === String(a.shopOrderId));
-            
+
             return {
                 assignmentId: a._id,
                 orderId: a.order._id,
@@ -290,7 +290,7 @@ export const acceptOrder = async (req, res) => {
         // FIX: Spelling theek ki 'broadcasted'
         const alreadyAssigned = await DeliveryAssignment.findOne({
             assignedTo: req.userId,
-            status: { $nin: ['broadcasted', 'completed', 'cancelled', 'rejected'] } 
+            status: { $nin: ['broadcasted', 'completed', 'cancelled', 'rejected'] }
         });
 
         if (alreadyAssigned) {
@@ -304,15 +304,15 @@ export const acceptOrder = async (req, res) => {
 
         // ✅ THE MAIN FIX: Normal JS Array .find() use karo, .id() nahi
         const shopOrderIndex = order.shopOrders.findIndex(so => String(so._id) === String(assignment.shopOrderId));
-        
+
         if (shopOrderIndex === -1) {
-             return res.status(400).json({ message: 'Shop order not found within the main order' });
+            return res.status(400).json({ message: 'Shop order not found within the main order' });
         }
 
         // ✅ State update karo
         order.shopOrders[shopOrderIndex].assignedDeliveryBoy = req.userId;
         // Agar status update karna hai directly toh:
-        order.shopOrders[shopOrderIndex].status = "Out for Delivery"; 
+        order.shopOrders[shopOrderIndex].status = "Out for Delivery";
 
         await order.save(); // Order save kiya
 
@@ -337,9 +337,15 @@ export const getCurrentOrder = async (req, res) => {
             assignedTo: req.userId,
             status: 'assigned' // Ya jo bhi active status ho tumhara
         })
-        .populate('shop', 'name')
-        .populate('assignedTo', 'fullName email mobile location')
-        .populate('order'); // Pura order laao
+            .populate('shop', 'name')
+            .populate('assignedTo', 'fullName email mobile location')
+            .populate({
+                path: 'order',
+                populate: {
+                    path: 'user',
+                    select: 'fullName mobile' // Yahan hum specifically 'fullName' maang rahe hain
+                }
+            });
 
         if (!assignment) {
             // Agar assignment nahi hai, toh 400 bhejne ki jagah null ya success:true, data:null bhejo

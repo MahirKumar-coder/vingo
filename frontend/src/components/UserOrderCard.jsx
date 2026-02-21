@@ -1,7 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 // 👇 FIX: 'order' ki jagah 'data' receive karo (Parent se 'data' aa raha hai)
 function UserOrderCard({ data }) { 
+
+  const navigate = useNavigate()
   
   // Safety Check: Agar data undefined hai to crash mat hone do
   if (!data) return null;
@@ -61,6 +64,11 @@ function UserOrderCard({ data }) {
 
           </div>
         ))}
+
+        <div className='flex justify-between items-center border-t pt-2'>
+          <p className='font-semibold'>Total: ₹{data.totalAmount}</p>
+          <button className='bg-[#ff4d2d] hover:bg-[#e64526] text-white px-4 py-2 rounded-lg text-sm' onClick={()=>navigate(`/track-order/${data._id}`)}>Track Order</button>
+        </div>
       </div>
 
     </div>

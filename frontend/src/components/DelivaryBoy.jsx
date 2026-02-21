@@ -128,6 +128,8 @@ const DelivaryBoy = () => {
           Mark As Delivered
         </button> : <div className='mt-4 p-4 border rounded-xl bg-gray-50'>
           <p className='text-sm font-semibold mb-2'>Enter Otp send to <span className='text-orange-500'>{currentOrder?.user?.fullName || "Customer"}</span></p>
+          <input type="text" className='w-full border px-3 py-2 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-orange-400' placeholder='Enter OTP' />
+          <button className='w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition-all'>Submit OTP</button>
         </div>}
       </div>}
 

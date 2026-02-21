@@ -405,6 +405,13 @@ export const getOrderById = async (req, res) => {
             path:'shopOrders.shopOrderItems.item',
             model:'Item'
         })
+        // 👇👇 YAHAN SE NAYI LINE ADD KI HAI 👇👇
+        .populate({
+            path: 'shopOrders.assignedDeliveryBoy',
+            model: 'User', 
+            select: 'fullName mobile location' // Sirf zaroori data bhej rahe hain
+        })
+        // 👆👆 YAHAN TAK 👆👆
         .lean()
 
         if (!order) {

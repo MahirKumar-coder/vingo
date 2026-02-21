@@ -121,8 +121,8 @@ const EditItem = () => {
 
     return (
         <div className='flex justify-center flex-col items-center p-6 min-h-screen'>
-            <div onClick={() => navigate("/")}>
-                <IoIosArrowBack size={35} />
+            <div className='absolute top-[20px] left-[20px] left-[20px] z-[10] mb-[10px]' onClick={() => navigate("/")}>
+                <IoIosArrowBack size={35} className='text-[#ff4d2d]' />
             </div>
 
             <div className='max-w-lg w-full bg-white p-8'>

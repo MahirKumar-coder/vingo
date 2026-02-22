@@ -7,6 +7,7 @@ import DeliveryBoyTracking from './DeliveryBoyTracking'
 
 const DelivaryBoy = () => {
   const { userData } = useSelector(state => state.user)
+  const [otp, setOtp] = useState('')
 
   // ✅ FIX 1: Initial state ko null ki jagah empty array [] rakho
   const [availableAssignments, setAvailableAssignments] = useState([])
@@ -52,6 +53,53 @@ const DelivaryBoy = () => {
     }
   }
 
+  const sendOtp = async () => {
+    try {
+      const res = await axios.post(
+        `${serverUrl}/api/order/send-delivery-otp`,
+        {
+          orderId: currentOrder._id,
+          shopOrderId: currentOrder.shopOrder._id
+        },
+        { withCredentials: true }
+      );
+
+      setShowOtpBox(true);
+      console.log("OTP Sent:", res.data);
+
+    } catch (error) {
+      console.error(error);
+      alert("Failed to send OTP");
+    }
+  }
+
+  const verifyOtp = async () => {
+    try {
+      // 1. Backend ko request bhejein
+      const res = await axios.post(
+        `${serverUrl}/api/order/verify-delivery-otp`,
+        {
+          orderId: currentOrder._id,
+          shopOrderId: currentOrder.shopOrder._id,
+          otp: otp // State se aa raha hai
+        },
+        { withCredentials: true }
+      );
+
+      console.log("Success:", res.data);
+      alert("Order Delivered Successfully!");
+
+      // OTP verify hone ke baad screen clear kar do aur current order hata do
+      setShowOtpBox(false);
+      setOtp("");
+      await getCurrentOrder(); // Ye ab null set kar dega kyunki order deliver ho gaya
+
+    } catch (error) {
+      console.error("OTP Error:", error);
+      alert(error.response?.data?.message || "Invalid OTP");
+    }
+  }
+
   const getCurrentOrder = async () => {
     try {
       const result = await axios.get(`${serverUrl}/api/order/get-current-order`, { withCredentials: true })
@@ -66,9 +114,7 @@ const DelivaryBoy = () => {
     }
   }
 
-  const handleSendOtp = (e) => {
-    setShowOtpBox(true)
-  }
+
 
   useEffect(() => {
     getAssignment()
@@ -124,12 +170,12 @@ const DelivaryBoy = () => {
         </div>
 
         <DeliveryBoyTracking data={currentOrder} />
-        {!showOtpBox ? <button className='mt-4 w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md hover:bg-green-600 active:scale-95 transition-all duration-200' onClick={handleSendOtp}>
+        {!showOtpBox ? <button className='mt-4 w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md hover:bg-green-600 active:scale-95 transition-all duration-200' onClick={sendOtp}>
           Mark As Delivered
         </button> : <div className='mt-4 p-4 border rounded-xl bg-gray-50'>
           <p className='text-sm font-semibold mb-2'>Enter Otp send to <span className='text-orange-500'>{currentOrder?.user?.fullName || "Customer"}</span></p>
-          <input type="text" className='w-full border px-3 py-2 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-orange-400' placeholder='Enter OTP' />
-          <button className='w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition-all'>Submit OTP</button>
+          <input type="text" className='w-full border px-3 py-2 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-orange-400' placeholder='Enter OTP' onChange={(e) => setOtp(e.target.value)} value={otp} />
+          <button className='w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition-all' onClick={verifyOtp}>Submit OTP</button>
         </div>}
       </div>}
 

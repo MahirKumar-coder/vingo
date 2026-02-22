@@ -37,19 +37,27 @@ function TrackOrderPage() {
                         <p><span className='font-semibold'>Subtotal:</span>{shopOrder.subtotal}</p>
                         <p className='mt-6'><span className='font-semibold'>Delivery address:</span>{currentOrder.deliveryAddress?.text}</p>
                     </div>
-                    {shopOrder.status != "delivery" ? <>
+                    {/* 👇 FIX 1: "Delivered" Capital D ke sath 👇 */}
+                    {shopOrder.status !== "Delivered" ? (
+                        <>
+                            {shopOrder.assignedDeliveryBoy ? (
+                                <div className='text-sm text-gray-700'>
+                                    <p className='font-semibold'><span>Delivery Boy Name: </span>{shopOrder.assignedDeliveryBoy.fullName}</p>
+                                    <p className='font-semibold'><span>Delivery Boy Contact No.: </span>{shopOrder.assignedDeliveryBoy.mobile}</p>
+                                </div>
+                            ) : (
+                                <p className='font-semibold'>Delivery Boy is not assigned yet.</p>
+                            )}
+                        </>
+                    ) : (
+                        <p className='text-green-600 font-semibold text-lg'>Delivered</p>
+                    )}
 
-                        {shopOrder.assignedDeliveryBoy ?
-                            <div className='text-sm text-gray-700'>
-                                <p className='font-semibold'><span>Delivery Boy Name: </span>{shopOrder.assignedDeliveryBoy.fullName}</p>
-                                <p className='font-semibold'><span>Delivery Boy Contact No.: </span>{shopOrder.assignedDeliveryBoy.mobile}</p>
-                            </div> : <p className='font-semibold'>Delivery Boy is not assigned yet.</p>}
-                    </> : <p className='text-green-600 font-semibold text-lg'>Delivered</p>}
-                    {shopOrder.assignedDeliveryBoy?.location?.coordinates &&
+                    {/* 👇 FIX 2: "Delivered" Capital D ke sath 👇 */}
+                    {(shopOrder.assignedDeliveryBoy?.location?.coordinates && shopOrder.status !== "Delivered") && (
                         <div className='h-[400px] w-full rounded-2xl overflow-hidden shadow-md'>
                             <DeliveryBoyTracking data={{
                                 deliveryBoyLocation: {
-                                    // Ab ye crash nahi karega
                                     lat: shopOrder.assignedDeliveryBoy.location.coordinates[1],
                                     lon: shopOrder.assignedDeliveryBoy.location.coordinates[0]
                                 },
@@ -58,7 +66,8 @@ function TrackOrderPage() {
                                     lon: currentOrder.deliveryAddress?.longitude
                                 }
                             }} />
-                        </div>}
+                        </div>
+                    )}
                 </div>
             ))}
         </div>

@@ -2,6 +2,7 @@ import Shop from "../models/shop.model.js";
 import Order from "../models/order.model.js";
 import User from "../models/user.model.js";
 import DeliveryAssignment from "../models/deliveryAssignment.model.js";
+import { sendDeliveryOtpMail } from "../utils/mail.js";
 
 // 1. PLACE ORDER (No Changes needed, looks good)
 export const placeOrder = async (req, res) => {
@@ -394,31 +395,109 @@ export const getCurrentOrder = async (req, res) => {
 
 export const getOrderById = async (req, res) => {
     try {
-        const {orderId} = req.params
+        const { orderId } = req.params
         const order = await Order.findById(orderId)
-        .populate('user')
-        .populate({
-            path:'shopOrders.shop',
-            model:'Shop'
-        })
-        .populate({
-            path:'shopOrders.shopOrderItems.item',
-            model:'Item'
-        })
-        // 👇👇 YAHAN SE NAYI LINE ADD KI HAI 👇👇
-        .populate({
-            path: 'shopOrders.assignedDeliveryBoy',
-            model: 'User', 
-            select: 'fullName mobile location' // Sirf zaroori data bhej rahe hain
-        })
-        // 👆👆 YAHAN TAK 👆👆
-        .lean()
+            .populate('user')
+            .populate({
+                path: 'shopOrders.shop',
+                model: 'Shop'
+            })
+            .populate({
+                path: 'shopOrders.shopOrderItems.item',
+                model: 'Item'
+            })
+            // 👇👇 YAHAN SE NAYI LINE ADD KI HAI 👇👇
+            .populate({
+                path: 'shopOrders.assignedDeliveryBoy',
+                model: 'User',
+                select: 'fullName mobile location' // Sirf zaroori data bhej rahe hain
+            })
+            // 👆👆 YAHAN TAK 👆👆
+            .lean()
 
         if (!order) {
-            return res.status(400).json({message: 'order not found'})
+            return res.status(400).json({ message: 'order not found' })
         }
         return res.status(200).json(order)
     } catch (error) {
         return res.status(500).json({ message: `get by id order error: ${error.message}` });
+    }
+}
+
+export const sendDeliveryOtp = async (req, res) => {
+    try {
+        const { orderId, shopOrderId } = req.body;
+
+        // 1. Pehle sirf order dhundo
+        const order = await Order.findById(orderId).populate('user');
+
+        // 2. Check karo order mila ya nahi
+        if (!order) {
+            return res.status(400).json({ message: 'Order not found' });
+        }
+
+        // 3. Ab safely shop order nikalo
+        const shopOrder = order.shopOrders.id(shopOrderId);
+
+        if (!shopOrder) {
+            return res.status(400).json({ message: 'Shop order not found' });
+        }
+
+        const otp = Math.floor(1000 + Math.random() * 9000).toString();
+        shopOrder.deliveryOtp = otp;
+        shopOrder.otpExpires = Date.now() + 5 * 60 * 1000;
+
+        await order.save();
+        await sendDeliveryOtpMail(order.user, otp);
+
+        return res.status(200).json({ message: `Otp sent Successfully to ${order?.user?.fullName}` });
+    } catch (error) {
+        return res.status(500).json({ message: `delivery otp error ${error.message}` });
+    }
+}
+
+// 👇 Naya verifyDeliveryOtp Code 👇
+export const verifyDeliveryOtp = async (req, res) => {
+    try {
+        const { orderId, shopOrderId, otp } = req.body;
+
+        // 1. Pehle sirf order dhundo
+        const order = await Order.findById(orderId).populate('user');
+
+        // 2. Turant check karo ki order mila ya nahi!
+        if (!order) {
+            return res.status(400).json({ message: 'Order not found' });
+        }
+
+        // 3. Ab safely shopOrder nikalo (kyunki ab humein pata hai order null nahi hai)
+        const shopOrder = order.shopOrders.id(shopOrderId);
+
+        // 4. Check karo ki shopOrder mila ya nahi
+        if (!shopOrder) {
+            return res.status(400).json({ message: 'Shop order not found' });
+        }
+
+        // 5. OTP Check karo
+        if (shopOrder.deliveryOtp !== otp || !shopOrder.otpExpires || shopOrder.otpExpires < Date.now()) {
+            return res.status(400).json({ message: 'Invalid/Expired Otp' });
+        }
+
+        // 6. Status update karo
+        shopOrder.status = "Delivered";
+        shopOrder.deliveredAt = Date.now();
+        await order.save();
+
+        // 7. Assignment delete karo
+        await DeliveryAssignment.deleteOne({
+            shopOrderId: shopOrder._id,
+            order: order._id,
+            assignedTo: shopOrder.assignedDeliveryBoy
+        });
+
+        return res.status(200).json({ message: "Order Delivered" });
+
+    } catch (error) {
+        console.error("❌ Verify OTP Error:", error);
+        return res.status(500).json({ message: `verify delivery otp error: ${error.message}` });
     }
 }

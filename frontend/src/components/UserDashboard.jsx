@@ -4,9 +4,13 @@ import CategoryCard from "./CategoryCard";
 import { CiCircleChevLeft, CiCircleChevRight } from "react-icons/ci";
 import { useSelector } from "react-redux";
 import FoodCard from "./FoodCard";
+import { useNavigate } from "react-router-dom";
 
 const UserDashboard = () => {
   // ✅ SAFE REDUX DATA
+
+  const navigate = useNavigate();
+
   const currentCity =
     useSelector((state) => state?.user?.currentCity) || "your city";
 
@@ -20,6 +24,20 @@ const UserDashboard = () => {
 
   const [cateBtn, setCateBtn] = useState({ left: false, right: false });
   const [shopBtn, setShopBtn] = useState({ left: false, right: false });
+  const [updateItemsList, setUpdateItemsList] = useState([])
+
+  const handleFilterByCategory = (category) => {
+    if (category == "All") {
+      setUpdateItemsList(itemsInMyCity)
+    } else {
+      const filteredList =itemsInMyCity?.filter(i => i.category === category)
+      setUpdateItemsList(filteredList)
+    }
+  }
+
+  useEffect(() => {
+    setUpdateItemsList(itemsInMyCity)
+  }, [itemsInMyCity])
 
   const updateButtons = (ref, setBtn) => {
     const el = ref.current;
@@ -77,7 +95,8 @@ const UserDashboard = () => {
           className="flex gap-4 overflow-x-auto scrollbar-hide px-8"
         >
           {categories.map((c, i) => (
-            <CategoryCard key={i} data={c} />
+            <CategoryCard key={i} data={c} 
+            onClick={() => handleFilterByCategory(c.category)}/>
           ))}
         </div>
 
@@ -112,7 +131,7 @@ const UserDashboard = () => {
         >
           {shopInMyCity.map((shop, i) => {
             console.log("SHOP DATA 👉", shop);   // 👈 YEH LINE ADD KAR
-            return <CategoryCard key={i} data={shop} />;
+            return <CategoryCard key={i} data={shop} onClick={()=>navigate(`/shop/${shop._id}`)} />;
           })}
         </div>
 
@@ -133,7 +152,7 @@ const UserDashboard = () => {
         </h1>
 
         <div className="w-full h-auto flex flex-wrap gap-[20px] justify-center">
-          {itemsInMyCity?.map((item, index) => (
+          {updateItemsList?.map((item, index) => (
             <FoodCard key={index} data={item} />
           ))}
         </div>
@@ -143,3 +162,4 @@ const UserDashboard = () => {
 };
 
 export default UserDashboard;
+// 1:05:05

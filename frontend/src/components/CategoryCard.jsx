@@ -1,6 +1,6 @@
 import React from "react";
 
-const CategoryCard = ({ data }) => {
+const CategoryCard = ({ data, onClick }) => {
   console.log("CARD DATA 👉", data);
 
   const title = data?.category || data?.name || "No Name";
@@ -12,10 +12,10 @@ const CategoryCard = ({ data }) => {
   } else if (typeof data?.image === "object") {
     imageUrl = data.image?.url || "";
   }
-
+  
   return (
     <div className="w-[160px] h-[180px] rounded-2xl border-2 border-[#ff4d2d]
-    shrink-0 overflow-hidden bg-white shadow-lg relative">
+    shrink-0 overflow-hidden bg-white shadow-lg relative" onClick={onClick}>
 
       {imageUrl ? (
         <img

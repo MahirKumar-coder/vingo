@@ -103,7 +103,10 @@ export const getShopByCity = async (req, res) => {
         // Case-insensitive Search
         const shops = await Shop.find({
             city: { $regex: new RegExp(`^${cleanedCity}$`, "i") },
-        }).populate("items"); // ✅ Items bhi dikhane honge user ko
+        }).populate("items")
+        if (!shops) {
+            return res.status(400).json({ message: "shops not found" })
+        }// ✅ Items bhi dikhane honge user ko
 
         return res.status(200).json(shops);
     } catch (error) {

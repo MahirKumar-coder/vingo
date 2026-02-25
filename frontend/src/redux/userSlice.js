@@ -13,7 +13,8 @@ const userSlice = createSlice({
         itemsInMyCity: null,
         cartItems: [],
         totalAmount: 0,
-        MyOrders: []
+        MyOrders: [],
+        searchItems: null
     },
     reducers: {
         // ... (Baaki saare reducers same rahenge) ...
@@ -108,6 +109,10 @@ const userSlice = createSlice({
                     subOrder.status = status; // ✅ Correct assignment
                 }
             }
+        },
+
+        setSearchItems: (state, action) => {
+            state.searchItems = action.payload
         }
     }
 });
@@ -125,7 +130,8 @@ export const {
     removeCartItem,
     setMyOrders,
     addMyOrders,
-    updateOrderStatus
+    updateOrderStatus,
+    setSearchItems
 } = userSlice.actions;
 
 export default userSlice.reducer;

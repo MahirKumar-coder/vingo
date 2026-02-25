@@ -13,7 +13,8 @@ import { useNavigate } from "react-router-dom";
 import {
   setUserData,
   setCurrentCity,
-  logoutUser
+  logoutUser,
+  setSearchItems
 } from "../redux/userSlice";
 
 import { setMyShopData } from "../redux/ownerSlice";
@@ -80,6 +81,7 @@ const Nav = () => {
   const avatarRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [anchorRect, setAnchorRect] = useState(null);
+  const [query, setQuery] = useState("")
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -108,6 +110,26 @@ const Nav = () => {
       console.error("Logout failed:", error);
     }
   };
+
+  const handleSearchItems = async () => {
+    try {
+      // 👇 FIX 1: withCredentials (s lagaya hai)
+      const result = await axios.get(
+        `${serverUrl}/api/item/search-items?query=${query}&city=${currentCity}`,
+        { withCredentials: true }
+      );
+
+      // 👇 FIX 2: Console log lagaya taaki pata chale backend kya bhej raha hai
+      console.log("SEARCH API RESPONSE 👉", result.data);
+
+      // Agar backend { items: [...] } format me data bhejta hai, toh result.data.items likhna padega
+      // Filhal main result.data hi chhod raha hu.
+      dispatch(setSearchItems(result.data));
+
+    } catch (error) {
+      console.log("❌ SEARCH ERROR:", error);
+    }
+  }
 
 
 
@@ -157,6 +179,14 @@ const Nav = () => {
   // toggle handler assigned to avatar
   const toggleMenu = () => setMenuOpen((s) => !s);
 
+  useEffect(() => {
+    if (query) {
+      handleSearchItems()
+    } else {
+      dispatch(setSearchItems(null));
+    }
+  }, [query])
+
   return (
     <nav
       className="fixed top-0 left-0 right-0 z-50 bg-[#fff9f6] backdrop-blur-sm shadow-sm"
@@ -187,6 +217,8 @@ const Nav = () => {
               placeholder="Search delicious food..."
               className="w-full text-gray-700 outline-none text-sm placeholder-gray-400"
               aria-label="Search food"
+              onChange={(e) => setQuery(e.target.value)}
+              value={query}
             />
           </div>
         </div>}
@@ -259,6 +291,8 @@ const Nav = () => {
               placeholder="Search delicious food..."
               className="w-full text-gray-700 outline-none text-sm placeholder-gray-400"
               aria-label="Mobile search"
+              onChange={(e) => setQuery(e.target.value)}
+              value={query} // <--- YEH LINE ADD KAR LO
             />
           </div>
         </div>

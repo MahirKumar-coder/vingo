@@ -11,13 +11,9 @@ const UserDashboard = () => {
 
   const navigate = useNavigate();
 
-  const currentCity =
-    useSelector((state) => state?.user?.currentCity) || "your city";
+  const { currentCity, shopInMyCity, itemsInMyCity, searchItems } = useSelector(state => state.user)
 
-  const shopInMyCity =
-    useSelector((state) => state?.user?.shopInMyCity) || [];
 
-  const itemsInMyCity = useSelector((state) => state?.user?.itemsInMyCity) || [];
 
   const cateRef = useRef(null);
   const shopRef = useRef(null);
@@ -30,7 +26,7 @@ const UserDashboard = () => {
     if (category == "All") {
       setUpdateItemsList(itemsInMyCity)
     } else {
-      const filteredList =itemsInMyCity?.filter(i => i.category === category)
+      const filteredList = itemsInMyCity?.filter(i => i.category === category)
       setUpdateItemsList(filteredList)
     }
   }
@@ -56,24 +52,44 @@ const UserDashboard = () => {
     });
   };
 
+
+
   useEffect(() => {
+    const cateNode = cateRef.current; // Ref ko variable mein store karo
+    const shopNode = shopRef.current;
+
     updateButtons(cateRef, setCateBtn);
     updateButtons(shopRef, setShopBtn);
 
     const cateScroll = () => updateButtons(cateRef, setCateBtn);
     const shopScroll = () => updateButtons(shopRef, setShopBtn);
 
-    cateRef.current?.addEventListener("scroll", cateScroll);
-    shopRef.current?.addEventListener("scroll", shopScroll);
+    cateNode?.addEventListener("scroll", cateScroll);
+    shopNode?.addEventListener("scroll", shopScroll);
 
+    // Cleanup function
     return () => {
-      cateRef?.current?.removeEventListener("scroll", cateScroll);
-      shopRef?.current?.removeEventListener("scroll", shopScroll);
+      cateNode?.removeEventListener("scroll", cateScroll); // Variable use karo
+      shopNode?.removeEventListener("scroll", shopScroll);
     };
   }, []);
 
   return (
     <div className="w-full max-w-6xl mx-auto flex flex-col gap-14 px-4">
+
+      {searchItems && searchItems.length > 0 && (
+        <div className="w-full max-w-6xl flex flex-col gap-5 items-start p-5 bg-white shadow-md rounded-2xl mt-4">
+          <h1 className="text-gray-900 text-2xl sm:text-3xl font-semibold border-b border-gray-200 pb-2">
+            Search Results
+          </h1>
+          {/* YEH LINE ADD KARNI PADEGI */}
+          <div className="w-full h-auto flex flex-wrap gap-[20px]">
+            {searchItems.map((item, index) => (
+              <FoodCard key={index} data={item} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* CATEGORY SLIDER */}
       <section className="relative">
@@ -95,8 +111,8 @@ const UserDashboard = () => {
           className="flex gap-4 overflow-x-auto scrollbar-hide px-8"
         >
           {categories.map((c, i) => (
-            <CategoryCard key={i} data={c} 
-            onClick={() => handleFilterByCategory(c.category)}/>
+            <CategoryCard key={i} data={c}
+              onClick={() => handleFilterByCategory(c.category)} />
           ))}
         </div>
 
@@ -129,9 +145,9 @@ const UserDashboard = () => {
           ref={shopRef}
           className="flex gap-4 overflow-x-auto scrollbar-hide px-8"
         >
-          {shopInMyCity.map((shop, i) => {
+          {shopInMyCity?.map((shop, i) => {
             console.log("SHOP DATA 👉", shop);   // 👈 YEH LINE ADD KAR
-            return <CategoryCard key={i} data={shop} onClick={()=>navigate(`/shop/${shop._id}`)} />;
+            return <CategoryCard key={i} data={shop} onClick={() => navigate(`/shop/${shop._id}`)} />;
           })}
         </div>
 

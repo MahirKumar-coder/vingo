@@ -45,7 +45,7 @@ function CheckOut() {
     
     // Redux State
     const { location, address } = useSelector(state => state.map);
-    const { cartItems, totalAmount } = useSelector(state => state.user);
+    const { cartItems, totalAmount, userData } = useSelector(state => state.user);
     
     // Local State
     const [paymentMethod, setPaymentMethod] = useState("cod");
@@ -92,19 +92,10 @@ function CheckOut() {
 
     // --- 3. Current Location ---
     const getCurrentLocation = () => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const { latitude, longitude } = position.coords;
-                    dispatch(setLocation({ lat: latitude, lon: longitude }));
-                    getAddressByLatLng(latitude, longitude);
-                },
-                (error) => {
-                    console.error("Geolocation error:", error);
-                    alert("Could not extract location.");
-                }
-            );
-        }
+        const latitude = userData.location.coordinates[1]
+        const longitude = userData.location.coordinates[0]
+        dispatch(setLocation({ lat: latitude, lon: longitude }))
+        getAddressByLatLng(latitude, longitude)
     }
 
     // --- 4. Forward Geocoding ---
@@ -263,3 +254,5 @@ function CheckOut() {
 }
 
 export default CheckOut;
+
+// 1:51:07

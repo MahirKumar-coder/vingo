@@ -58,7 +58,7 @@ export const placeOrder = async (req, res) => {
         }
 
         if (paymentMethod == 'online') {
-            const razorOrder = instance.orders.create({
+            const razorOrder = await instance.orders.create({
                 amount: Math.round(totalAmount * 100),
                 currency: 'INR',
                 receipt: `receipt_${Date.now()}`
@@ -143,7 +143,7 @@ export const getMyOrders = async (req, res) => {
             const orders = await Order.find({ 'shopOrders.owner': req.userId })
                 .sort({ createdAt: -1 })
                 .populate('shopOrders.shop', 'name')
-                .populate('user', 'name email') // User details visible to owner
+                .populate('user', 'fullName email mobile') // User details visible to owner
                 .populate('shopOrders.shopOrderItems.item', 'name image price')
                 .populate('shopOrders.assignedDeliveryBoy', 'fullName mobile ');
 

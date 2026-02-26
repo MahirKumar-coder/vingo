@@ -134,9 +134,13 @@ function CheckOut() {
                 cartItems
             }, { withCredentials: true });
 
-            if(result.data.success){
+            if(paymentMethod == 'cod'){
                 dispatch(addMyOrders(result.data))
                 navigate("/order-placed"); // Redirect user
+            } else {
+                const orderId = result.data.orderId
+                const razorOrder = result.data.razorOrder
+                openRazorpayWindow(orderId, razorOrder)
             }
 
         } catch (error) {
@@ -145,6 +149,33 @@ function CheckOut() {
         } finally {
             setLoading(false); // Button enable end
         }
+    }
+
+    const openRazorpayWindow=(orderId, razorOrder)=>{
+        const options={
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+            amount: razorOrder.amount,
+            currency:'INR',
+            name:'Vingo',
+            description:'Food Delivery Website',
+            order_id: razorOrder.id,
+            handler: async function (response) {
+                try {
+                    const result = await axios.post(`${serverUrl}/api/order/verify-payment`, {
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        orderId
+                    }, {withCredentials: true})
+                    dispatch(addMyOrders(result.data))
+                    navigate("/order-placed")
+                } catch (error) {
+                    console.log(error);
+                    
+                }
+            }
+        }
+
+        const rzp = new window.Razorpay(options)
+        rzp.open()
     }
 
     return (

@@ -14,7 +14,8 @@ const userSlice = createSlice({
         cartItems: [],
         totalAmount: 0,
         MyOrders: [],
-        searchItems: null
+        searchItems: null,
+        socket: null
     },
     reducers: {
         // ... (Baaki saare reducers same rahenge) ...
@@ -55,6 +56,10 @@ const userSlice = createSlice({
 
         setItemsInMyCity: (state, action) => {
             state.itemsInMyCity = action.payload;
+        },
+
+        setSocket: (state, action) => {
+            state.socket = action.payload;
         },
 
         addToCart: (state, action) => {
@@ -131,7 +136,8 @@ export const {
     setMyOrders,
     addMyOrders,
     updateOrderStatus,
-    setSearchItems
+    setSearchItems,
+    setSocket
 } = userSlice.actions;
 
 export default userSlice.reducer;

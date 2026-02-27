@@ -92,6 +92,32 @@ export const placeOrder = async (req, res) => {
         await newOrder.populate("shopOrders.shopOrderItems.item", "name image price");
         await newOrder.populate("shopOrders.shop", "name");
 
+        // 👇 FIX 1: Owner ka socketId nikalne ke liye usko populate karna zaroori hai
+        await newOrder.populate("shopOrders.owner", "socketId");
+
+        const io = req.app.get('io');
+
+        if (io) {
+            newOrder.shopOrders.forEach(shopOrder => {
+                const ownerSocketId = shopOrder.owner?.socketId; // Ab yahan socketId mil jayega
+
+                if (ownerSocketId) {
+                    // 👇 FIX 2: Logic bahar likho. Aur yahan req.userId (customer) nahi, balki owner ki ID check karni hai
+                    const myShopOrders = newOrder.shopOrders.filter(o => String(o.owner._id) === String(shopOrder.owner._id));
+
+                    const payload = {
+                        ...newOrder.toObject(),
+                        shopOrders: myShopOrders
+                    };
+
+                    // 👇 FIX 3: Seedha payload bhej do
+                    io.to(ownerSocketId).emit('newOrder', payload);
+                }
+            });
+        }
+// 3:43:24
+        return res.status(201).json({ success: true, message: "Order placed successfully", order: newOrder });
+
         return res.status(201).json({ success: true, message: "Order placed successfully", order: newOrder });
 
     } catch (error) {
@@ -111,7 +137,7 @@ export const verifyPayment = async (req, res) => {
         if (!order) {
             return res.status(400).json({ message: 'order not found' })
         }
-        
+
         order.payment = true
         await order.save()
 

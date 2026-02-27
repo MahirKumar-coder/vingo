@@ -18,6 +18,7 @@ import shopRouter from "./routes/shop.routes.js";
 import itemRouter from "./routes/item.routes.js";
 import orderRouter from "./routes/order.routes.js";
 import http from "http"
+import { Server } from "socket.io";
 import { socketHandler } from "./socket.js";
 
 // Load Env Vars

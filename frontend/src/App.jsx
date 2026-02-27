@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react' // useState aur useEffect add kiya
+import { io } from 'socket.io-client'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import SignIn from "./pages/SignIn.jsx";
 import SignUp from "./pages/SignUp.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import useGetCurrentUser from './hooks/useGetCurrentUser'
 import { useSelector, useDispatch } from 'react-redux' // useDispatch add kiya
-import { setUserData } from './redux/userSlice' // setUserData import kiya
+import { setSocket, setUserData } from './redux/userSlice' // setUserData import kiya
 import Home from "./pages/Home.jsx";
 import Nav from './components/Nav'
 import useGetCity from './hooks/useGetCity'
@@ -47,6 +48,15 @@ function App() {
   // --- FIX START: Refresh hone par turant Storage check karo ---
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
+    const socketInstance = io(serverUrl, {withCredentials: true})
+    dispatch(setSocket(socketInstance))
+    socketInstance.on('connect', () => {
+      if (userData) {
+        socketInstance.emit('identity', {userId: userData._id})
+      }
+      
+    })
+    
 
     // Agar storage me user hai aur Redux khali hai, to Redux me daalo
     if (storedUser && !userData) {
@@ -55,7 +65,10 @@ function App() {
 
     // Check complete ho gaya, ab app dikha sakte hain
     setIsAppReady(true);
-  }, []); // [] ka matlab sirf ek baar chalega start me
+    return () => {
+      socketInstance.disconnect()
+    }
+  }, [userData?._id]); // [] ka matlab sirf ek baar chalega start me
   // --- FIX END ---
 
 

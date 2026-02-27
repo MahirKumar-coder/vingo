@@ -1,30 +1,60 @@
-import React, { useEffect } from 'react' // 1. useEffect import kiya
-import { useSelector, useDispatch } from 'react-redux' // 2. useDispatch import kiya
-import { useNavigate } from 'react-router-dom'; // 3. useNavigate import kiya
+import React, { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { IoIosArrowBack } from "react-icons/io";
 import UserOrderCard from '../components/UserOrderCard';
 import OwnerOrderCard from '../components/OwnerOrderCard';
-// 👇 Apne action ka sahi path import karna
-// import { getMyOrders } from '../store/actions/userActions'; 
+
+// 👇 FIX 1: setMyOrders ki jagah addMyOrders import karo
+import { addMyOrders, updateRealtimeOrderStatus } from '../redux/userSlice';
 
 function MyOrders() {
-    const navigate = useNavigate(); // ✅ Fix: Navigate Hook
-    const dispatch = useDispatch(); // ✅ Fix: Dispatch Hook
-    
-    // 👇 Dhyan de: Redux state me spelling check kar lena (myOrders vs MyOrders)
-    const { userData, MyOrders } = useSelector(state => state.user);
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
 
-    // ✅ Fix: Page load hote hi data mangwana padega
+    // 👇 FIX 2: Redux se 'socket' bhi nikalo jo humne App.jsx me set kiya tha
+    // (Ensure karo ki tumhare userSlice me socket ka naam yahi hai)
+    const { userData, MyOrders, socket } = useSelector(state => state.user);
+
+    // ✅ Socket Listener Logic
     useEffect(() => {
-        // Agar action ka naam 'getMyOrders' hai to ye line uncomment karo:
-        // dispatch(getMyOrders()); 
-    }, [dispatch]);
+        // Agar socket ya userData abhi tak load nahi hua hai, toh ruk jao
+        if (!socket || !userData) return;
+
+        // 1. New Order Handler
+        const handleNewOrder = (data) => {
+            console.log("🔥 New Order Received from Socket:", data);
+            if (data?.shopOrders && data.shopOrders.length > 0) {
+                dispatch(addMyOrders(data));
+            }
+        };
+
+        // 👇 FIX 1: Update Status Handler ko ek alag function banaya
+        const handleUpdateStatus = ({ orderId, shopId, status, userId }) => {
+            // Null safety ke sath check karo
+            if (userId === userData._id) {
+                dispatch(updateRealtimeOrderStatus({ orderId, shopId, status }));
+            }
+        };
+
+        // Socket events listen karo
+        socket.on('newOrder', handleNewOrder);
+        socket.on('update-status', handleUpdateStatus);
+
+        // Cleanup function
+        return () => {
+            socket.off('newOrder', handleNewOrder);
+            // 👇 FIX 2: Ab sirf yahi wala lisaner hategaa, sab nahi
+            socket.off('update-status', handleUpdateStatus);
+        };
+
+        // 👇 FIX 3: dispatch aur userData ko dependency array mein add kiya
+    }, [socket, dispatch, userData]);
 
     return (
         <div className='w-full min-h-screen bg-[#fff9f6] flex justify-center px-4'>
             <div className='w-full max-w-[800px] p-4'>
                 <div className='flex items-center gap-[20px] mb-6 '>
-                    {/* ✅ navigate ab sahi chalega */}
                     <div className='cursor-pointer z-[10]' onClick={() => navigate("/")}>
                         <IoIosArrowBack size={35} className='text-[#ff4d2d]' />
                     </div>
@@ -32,7 +62,6 @@ function MyOrders() {
                 </div>
 
                 <div className='space-y-6'>
-                    {/* ✅ Check: Agar orders hain tabhi map chalega */}
                     {MyOrders && MyOrders.length > 0 ? (
                         MyOrders.map((order, index) => (
                             userData?.role === 'user' ? (
@@ -42,13 +71,12 @@ function MyOrders() {
                             ) : null
                         ))
                     ) : (
-                        // ✅ Empty state message
                         <p className="text-center text-gray-500 mt-10">No orders found.</p>
                     )}
                 </div>
             </div>
         </div>
-    )
+    );
 }
 
-export default MyOrders
+export default MyOrders;

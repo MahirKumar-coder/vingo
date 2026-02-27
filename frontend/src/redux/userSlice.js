@@ -44,7 +44,7 @@ const userSlice = createSlice({
         setShopInMyCity: (state, action) => {
             state.shopInMyCity = action.payload;
         },
-        
+
         logoutUser: (state) => {
             state.userData = null;
             state.currentCity = null;
@@ -92,7 +92,7 @@ const userSlice = createSlice({
         },
 
         addMyOrders: (state, action) => {
-            state.MyOrders = [action.payload, ...state.MyOrders ]
+            state.MyOrders = [action.payload, ...state.MyOrders]
         },
 
         // 👇 FIXED REDUCER IS HERE
@@ -116,10 +116,27 @@ const userSlice = createSlice({
             }
         },
 
+        // 👇 Yeh dono reducers reducers block ke andar hone chahiye
+        updateRealtimeOrderStatus: (state, action) => {
+            const { orderId, shopId, status } = action.payload;
+
+            // 1. Main Order dhundo
+            const order = state.MyOrders.find(o => o._id === orderId);
+
+            if (order && order.shopOrders) {
+                const shopOrder = order.shopOrders.find(so => so.shop._id == shopId);
+                if (shopOrder) {
+                    shopOrder.status = status;
+                }
+            }
+        }, // <--- Yahan comma (,) lagana zaroori hai
+
+        // 👇 FIX: Isko reducers { } block ke andar laya gaya hai
         setSearchItems: (state, action) => {
-            state.searchItems = action.payload
+            state.searchItems = action.payload;
         }
-    }
+
+    } // <--- Reducers block yahan close hoga
 });
 
 export const {
@@ -137,7 +154,8 @@ export const {
     addMyOrders,
     updateOrderStatus,
     setSearchItems,
-    setSocket
+    setSocket,
+    updateRealtimeOrderStatus
 } = userSlice.actions;
 
 export default userSlice.reducer;

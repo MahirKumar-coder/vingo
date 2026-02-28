@@ -310,6 +310,8 @@ export const updateOrderStatus = async (req, res) => {
             }));
 
             await order.save();
+            await deliveryAssignment.populate('order')
+            await deliveryAssignment.populate('shop')
         }
 
         // 👇 FIX 1: 'user' ko bhi populate kiya taaki usko socket message bhej sakein
@@ -330,6 +332,20 @@ export const updateOrderStatus = async (req, res) => {
                 status: finalShopOrder.status,
                 userId: finalOrder.user._id
             });
+            availableBoys.forEach(boy => {
+                const boySocketId = boy.socketId
+                if (boySocketId) {
+                    io.to(boySocketId).emit('newAssignment', {
+                        assignmentId: deliveryAssignment._id,
+                        orderId: deliveryAssignment.order._id,
+                        shopName: deliveryAssignment.shop ? deliveryAssignment.shop.name : "Unknown Shop",
+                        deliveryAddress: deliveryAssignment.order.deliveryAddress,
+                        items: targetShopOrder ? targetShopOrder.shopOrderItems : [],
+                        subtotal: targetShopOrder ? targetShopOrder.subtotal : 0
+                    })
+                    // 4:23:19
+                }
+            })
         }
 
         return res.status(200).json({

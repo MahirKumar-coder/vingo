@@ -314,16 +314,13 @@ export const updateOrderStatus = async (req, res) => {
             await deliveryAssignment.populate('shop')
         }
 
-        // 👇 FIX 1: 'user' ko bhi populate kiya taaki usko socket message bhej sakein
         const finalOrder = await Order.findById(orderId)
             .populate('shopOrders.shop', 'name')
             .populate('shopOrders.assignedDeliveryBoy', 'fullName email mobile')
             .populate('user', 'socketId _id');
 
-        // 👇 FIX 2: o.shop._id use kiya kyunki shop populate ho chuki hai
         const finalShopOrder = finalOrder.shopOrders.find(o => String(o.shop._id || o.shop) === String(shopId));
 
-        // 👇 FIX 3: Variables ke naam theek kiye (updatedShopOrder ki jagah finalShopOrder aur finalOrder use kiya)
         const io = req.app.get('io');
         if (io && finalOrder.user && finalOrder.user.socketId) {
             io.to(finalOrder.user.socketId).emit('update-status', {
@@ -332,20 +329,6 @@ export const updateOrderStatus = async (req, res) => {
                 status: finalShopOrder.status,
                 userId: finalOrder.user._id
             });
-            availableBoys.forEach(boy => {
-                const boySocketId = boy.socketId
-                if (boySocketId) {
-                    io.to(boySocketId).emit('newAssignment', {
-                        assignmentId: deliveryAssignment._id,
-                        orderId: deliveryAssignment.order._id,
-                        shopName: deliveryAssignment.shop ? deliveryAssignment.shop.name : "Unknown Shop",
-                        deliveryAddress: deliveryAssignment.order.deliveryAddress,
-                        items: targetShopOrder ? targetShopOrder.shopOrderItems : [],
-                        subtotal: targetShopOrder ? targetShopOrder.subtotal : 0
-                    })
-                    // 4:23:19
-                }
-            })
         }
 
         return res.status(200).json({
@@ -353,6 +336,7 @@ export const updateOrderStatus = async (req, res) => {
             message: "Status Updated",
             shopOrder: finalShopOrder,
             assignedDeliveryBoy: finalShopOrder?.assignedDeliveryBoy,
+            // 👇 FIX: Yahan 'availableBoys' ki jagah 'deliveryBoysPayLoad' aayega!
             availableBoys: deliveryBoysPayLoad,
             assignment: finalShopOrder?.assignment
         });

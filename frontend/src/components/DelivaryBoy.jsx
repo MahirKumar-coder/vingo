@@ -6,7 +6,7 @@ import { serverUrl } from '../App' // Ya jaha bhi define ho
 import DeliveryBoyTracking from './DeliveryBoyTracking'
 
 const DelivaryBoy = () => {
-  const { userData } = useSelector(state => state.user)
+  const { userData, socket } = useSelector(state => state.user)
   const [otp, setOtp] = useState('')
 
   // ✅ FIX 1: Initial state ko null ki jagah empty array [] rakho
@@ -100,6 +100,18 @@ const DelivaryBoy = () => {
     }
   }
 
+  useEffect(() => {
+    socket.on('newAssignment', (data) => {
+      if (data.sentTo == userData._id) {
+        setAvailableAssignments(prev => [...prev, data])
+      }
+    })
+
+    return () => {
+      socket?.off('newAssignment')
+    }
+  }, [socket])
+
   const getCurrentOrder = async () => {
     try {
       const result = await axios.get(`${serverUrl}/api/order/get-current-order`, { withCredentials: true })
@@ -185,4 +197,4 @@ const DelivaryBoy = () => {
 
 export default DelivaryBoy
 
-// 10:51:59
+// 4:33:17

@@ -14,6 +14,34 @@ const DelivaryBoy = () => {
   const [currentOrder, setCurrentOrder] = useState(null)
   const [showOtpBox, setShowOtpBox] = useState(false)
 
+  useEffect(() => {
+    if (!socket || userData.role !== "deliveryBoy") {
+      let watchId
+      if (navigator.geolocation) {
+        watchId = navigator.geolocation.watchPosition((position) => {
+          const latitude = position.coords.latitude
+          const longitude = position.coords.longitude
+          socket.emit('updateLocation', {
+            latitude,
+            longitude,
+            userId: userData._id
+          })
+        }),
+        (error) => {
+          console.log(error);
+          
+        },
+        {
+          enableHighAccuracy: true
+        }
+      }
+
+      return () => {
+        if (watchId) navigator.geolocation.clearWatch(watchId)
+      }
+    }
+  }, [socket, userData])
+
   const getAssignment = async () => {
     try {
       const res = await axios.get(`${serverUrl}/api/order/get-assignments`, { withCredentials: true })

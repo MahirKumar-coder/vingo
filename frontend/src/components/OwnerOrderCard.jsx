@@ -98,20 +98,33 @@ function OwnerOrderCard({ data }) {
           <p className='flex items-center gap-2'><span className='text-lg'>👤</span> <span className='font-semibold text-gray-800'>{data.user?.fullName || "Guest User"}</span></p>
           <p className='flex items-center gap-2'><span className='text-lg'>📞</span> {data.user?.mobile || "No Mobile Number"}</p>
           <p className='flex items-center gap-2'><span className='text-lg'>📧</span> {data.user?.email || "No Email ID"}</p>
-          <p className='flex items-start gap-2 mt-2'>
+          
+          <div className='flex items-start gap-2 mt-2'>
             <span className='text-lg'>📍</span> 
-            <span className='leading-snug'>{data.deliveryAddress?.text || "No Address Provided"}</span>
-          </p>
+            <div className='flex flex-col'>
+              <span className='leading-snug'>{data.deliveryAddress?.text || "No Address Provided"}</span>
+              
+              {/* 👇 NEW: GPS Coordinates UI */}
+              {(data.deliveryAddress?.latitude && data.deliveryAddress?.longitude) && (
+                <span className='text-xs font-mono text-gray-400 mt-1 flex gap-2'>
+                  <span className='bg-white px-1.5 py-0.5 rounded border border-gray-200'>Lat: {Number(data.deliveryAddress.latitude).toFixed(4)}</span>
+                  <span className='bg-white px-1.5 py-0.5 rounded border border-gray-200'>Lon: {Number(data.deliveryAddress.longitude).toFixed(4)}</span>
+                </span>
+              )}
+            </div>
+          </div>
         </div>
         
         {/* PAYMENT METHOD BADGE */}
-        <div className='mt-3 pt-3 border-t border-gray-200 flex items-center gap-2'>
-          <span className='text-sm font-bold text-gray-700'>Payment:</span>
-          <span className={`px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide ${
-            data.paymentMethod === 'online' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-orange-100 text-orange-700 border border-orange-200'
-          }`}>
-            {data.paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Online Paid'}
-          </span>
+        <div className='mt-3 pt-3 border-t border-gray-200 flex items-center justify-between'>
+          <div className='flex items-center gap-2'>
+            <span className='text-sm font-bold text-gray-700'>Payment:</span>
+            <span className={`px-3 py-1 text-xs font-bold rounded-full uppercase tracking-wide ${
+              data.paymentMethod === 'online' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-orange-100 text-orange-700 border border-orange-200'
+            }`}>
+              {data.paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Online Paid'}
+            </span>
+          </div>
         </div>
       </div>
 

@@ -1,35 +1,29 @@
 import React, { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
-import axios from 'axios' // Axios import karna mat bhulna
-// Apne serverUrl ka sahi path import karein
-import { serverUrl } from '../App' // Ya jaha bhi define ho
+import axios from 'axios'
+import { serverUrl } from '../App'
 import DeliveryBoyTracking from './DeliveryBoyTracking'
 
 const DelivaryBoy = () => {
   const { userData, socket } = useSelector(state => state.user)
   const [otp, setOtp] = useState('')
 
-  // ✅ FIX 1: Initial state ko null ki jagah empty array [] rakho
   const [availableAssignments, setAvailableAssignments] = useState([])
   const [currentOrder, setCurrentOrder] = useState(null)
   const [showOtpBox, setShowOtpBox] = useState(false)
-  const [deliveryBoyLocation, setDeliveryBoyLocation] = useState({})
+  const [deliveryBoyLocation, setDeliveryBoyLocation] = useState(null)
 
-  // ✅ FIX: Geolocation WatchPosition Syntax Fixed
   useEffect(() => {
-    let watchId; // Isey bahar declare karna zaroori hai cleanup ke liye
+    let watchId; 
 
-    // Sirf tabhi chalao jab socket ho aur user deliveryBoy ho
     if (socket && userData?.role === "deliveryBoy") {
-
       if (navigator.geolocation) {
         watchId = navigator.geolocation.watchPosition(
-          // 1. Success Callback
           (position) => {
             const latitude = position.coords.latitude;
             const longitude = position.coords.longitude;
 
-            setDeliveryBoyLocation({lat: latitude, lon: longitude})
+            setDeliveryBoyLocation({ lat: latitude, lon: longitude })
 
             socket.emit('updateLocation', {
               latitude,
@@ -37,15 +31,13 @@ const DelivaryBoy = () => {
               userId: userData._id
             });
           },
-          // 2. Error Callback
           (error) => {
             console.error("❌ GPS Error:", error.message);
           },
-          // 3. Options
           {
             enableHighAccuracy: true,
-            maximumAge: 0, // Hamesha fresh location lega
-            timeout: 5000 // 5 sec mein location na mile to error dega
+            maximumAge: 0, 
+            timeout: 5000 
           }
         );
       } else {
@@ -53,22 +45,18 @@ const DelivaryBoy = () => {
       }
     }
 
-    // Cleanup function
     return () => {
       if (watchId) {
         navigator.geolocation.clearWatch(watchId);
       }
     };
-  }, [socket, userData]); // Dependencies sahi hain
+  }, [socket, userData]); 
 
   const getAssignment = async () => {
     try {
       const res = await axios.get(`${serverUrl}/api/order/get-assignments`, { withCredentials: true })
-
-      // ✅ FIX 3: Sahi variable use karo aur State update karo
       console.log(res.data)
-      setAvailableAssignments(res.data.assignments || res.data) // API response ke hisab se set karo
-
+      setAvailableAssignments(res.data.assignments || res.data) 
     } catch (error) {
       console.log(error)
     }
@@ -76,7 +64,6 @@ const DelivaryBoy = () => {
 
   const acceptOrder = async (assignmentId) => {
     try {
-      // 1. Backend को रिक्वेस्ट भेजें
       const res = await axios.post(
         `${serverUrl}/api/order/accept-order/${assignmentId}`,
         {},
@@ -85,8 +72,6 @@ const DelivaryBoy = () => {
 
       console.log("Success:", res.data);
 
-      // ✅ 2. UI से इस ऑर्डर को तुरंत हटा दें (Magic Line)
-      // यह लाइन लिस्ट में से उस ऑर्डर को हटा देगी जिसे अभी एक्सेप्ट किया गया है
       setAvailableAssignments((prevOrders) =>
         prevOrders.filter((order) => order.assignmentId !== assignmentId)
       );
@@ -95,7 +80,6 @@ const DelivaryBoy = () => {
 
     } catch (error) {
       console.log("Backend Error Message:", error.response?.data || error.message);
-      // अगर कोई एरर आए तो स्क्रीन पर दिखा दें
       alert(error.response?.data?.message || "Order accept karne mein error aayi");
     }
   }
@@ -122,13 +106,12 @@ const DelivaryBoy = () => {
 
   const verifyOtp = async () => {
     try {
-      // 1. Backend ko request bhejein
       const res = await axios.post(
         `${serverUrl}/api/order/verify-delivery-otp`,
         {
           orderId: currentOrder._id,
           shopOrderId: currentOrder.shopOrder._id,
-          otp: otp // State se aa raha hai
+          otp: otp 
         },
         { withCredentials: true }
       );
@@ -136,10 +119,9 @@ const DelivaryBoy = () => {
       console.log("Success:", res.data);
       alert("Order Delivered Successfully!");
 
-      // OTP verify hone ke baad screen clear kar do aur current order hata do
       setShowOtpBox(false);
       setOtp("");
-      await getCurrentOrder(); // Ye ab null set kar dega kyunki order deliver ho gaya
+      await getCurrentOrder(); 
 
     } catch (error) {
       console.error("OTP Error:", error);
@@ -162,10 +144,7 @@ const DelivaryBoy = () => {
   const getCurrentOrder = async () => {
     try {
       const result = await axios.get(`${serverUrl}/api/order/get-current-order`, { withCredentials: true })
-
-      // ✅ STEP 1: Yahan console.log lagao
       console.log("MERA ORDER DATA:", result.data.order);
-
       setCurrentOrder(result.data.order);
     } catch (error) {
       console.log(error);
@@ -173,24 +152,21 @@ const DelivaryBoy = () => {
     }
   }
 
-
-
   useEffect(() => {
     getAssignment()
     getCurrentOrder()
   }, [userData])
 
 
-
   return (
     <div className='w-screen min-h-screen flex flex-col gap-5 items-center bg-[#fff9f6] overflow-y-auto'>
       <div className='w-full max-w-[800px] flex flex-col gap-5 items-center'>
         <div className='bg-white rounded-2xl shadow-md p-5 flex flex-col justify-start items-center w-[90%] border border-orange-100 text-center gap-2'>
-          {/* Optional chaining (?.) lagaya taaki agar data na ho to crash na ho */}
           <h1 className='text-xl font-bold text-[#ff4d2d]'>Welcome, {userData?.fullName} </h1>
           <p className='text-[#ff4d2d]'>
-            <span className='font-semibold'>Latitude:</span> {userData?.location?.coordinates[1]},
-            <span className='font-semibold'>Longitude:</span> {userData?.location?.coordinates[0]}
+            {/* 👇 FIX 1: Null check lagaya (Optional Chaining aur Fallback) */}
+            <span className='font-semibold'>Latitude:</span> {deliveryBoyLocation?.lat || userData?.location?.coordinates?.[1]},
+            <span className='font-semibold'>Longitude:</span> {deliveryBoyLocation?.lon || userData?.location?.coordinates?.[0]}
           </p>
         </div>
       </div>
@@ -199,12 +175,9 @@ const DelivaryBoy = () => {
         <h1 className='text-lg font-bold mb-4 flex items-center gap-2'>Available Orders</h1>
 
         <div className='space-y-4'>
-
-          {/* Ab ye line crash nahi karegi kyunki humne [] use kiya hai */}
           {availableAssignments.length > 0 ? (
             availableAssignments.map((a, index) => (
               <div className='border rounded-lg p-4 flex justify-between items-center' key={index}>
-                {/* Yahan API ka data show karo */}
                 <div>
                   <p className='text-sm font-semibold'>{a?.shopName}</p>
                   <p className='text-sm text-gray-500'><span className='font-semibold'>Delivery Address:</span> {a?.deliveryAddress.text}</p>
@@ -216,7 +189,6 @@ const DelivaryBoy = () => {
           ) : (
             <p className='text-gray-400 text-sm'>No Available Orders</p>
           )}
-
         </div>
       </div>}
 
@@ -228,16 +200,18 @@ const DelivaryBoy = () => {
           <p className='text-xs text-gray-400'>{currentOrder.shopOrder.shopOrderItems.length} items | {currentOrder.shopOrder.subtotal}</p>
         </div>
 
-        <DeliveryBoyTracking data={deliveryBoyLocation: deliveryBoyLocation || {
-          deliveryBoyLocation: {
-            lat: userData.location.coordinates[1],
-            lon: userData.location.coordinates[0]
+        {/* 👇 FIX 2: Valid Object Syntax for data prop */}
+        <DeliveryBoyTracking data={{
+          deliveryBoyLocation: deliveryBoyLocation ? deliveryBoyLocation : {
+            lat: userData?.location?.coordinates?.[1],
+            lon: userData?.location?.coordinates?.[0]
           },
           customerLocation: {
-            lat: currentOrder.deliveryAddress?.latitude,
-            lon: currentOrder.deliveryAddress?.longitude
+            lat: currentOrder?.deliveryAddress?.latitude,
+            lon: currentOrder?.deliveryAddress?.longitude
           }
         }} />
+
         {!showOtpBox ? <button className='mt-4 w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md hover:bg-green-600 active:scale-95 transition-all duration-200' onClick={sendOtp}>
           Mark As Delivered
         </button> : <div className='mt-4 p-4 border rounded-xl bg-gray-50'>
@@ -252,5 +226,3 @@ const DelivaryBoy = () => {
 }
 
 export default DelivaryBoy
-
-// 5:12:53

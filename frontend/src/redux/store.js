@@ -8,5 +8,10 @@ export const store = configureStore({
         user: userSlice,
         owner: ownerSlice,
         map: mapSlice
-    }
-})
+    },
+    // 👇 BAS YEH 4 LINES ADD KARNI HAIN 👇
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware({
+            serializableCheck: false, // Yeh saari non-serializable warnings band kar dega
+        }),
+});

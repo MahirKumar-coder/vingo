@@ -4,11 +4,14 @@ import { serverUrl } from '../App'
 import { useNavigate, useParams } from 'react-router-dom'
 import { IoIosArrowBack } from "react-icons/io";
 import DeliveryBoyTracking from '../components/DeliveryBoyTracking';
+import { useSelector } from 'react-redux';
 
 function TrackOrderPage() {
     const { orderId } = useParams()
     const [currentOrder, setCurrentOrder] = useState()
     const navigate = useNavigate()
+    const { socket } = useSelector(state => state.user)
+    const [liveLocations, setLiveLocations] = useState({})
     const handleGetOrder = async () => {
         try {
             const result = await axios.get(`${serverUrl}/api/order/get-order-by-id/${orderId}`, { withCredentials: true })
@@ -19,6 +22,31 @@ function TrackOrderPage() {
 
         }
     }
+
+    // ✅ FIX: Socket Listener with Null Check, Logs and Cleanup
+    useEffect(() => {
+        if (!socket) return; // Agar socket load nahi hua, toh aage mat bado
+
+        const handleLocationUpdate = (data) => {
+            console.log("📍 Live Location Signal Received:", data); // 👈 Debugging ke liye zaroori
+
+            const { deliveryBoyId, latitude, longitude } = data;
+
+            if (deliveryBoyId && latitude && longitude) {
+                setLiveLocations(prev => ({
+                    ...prev,
+                    [deliveryBoyId]: { lat: latitude, lon: longitude }
+                }));
+            }
+        };
+
+        socket.on('updateDeliveryLocation', handleLocationUpdate);
+
+        // Cleanup function (Component unmount hone par listener hatana zaroori hai)
+        return () => {
+            socket.off('updateDeliveryLocation', handleLocationUpdate);
+        };
+    }, [socket]);
 
     useEffect(() => {
         handleGetOrder()
@@ -57,7 +85,7 @@ function TrackOrderPage() {
                     {(shopOrder.assignedDeliveryBoy?.location?.coordinates && shopOrder.status !== "Delivered") && (
                         <div className='h-[400px] w-full rounded-2xl overflow-hidden shadow-md'>
                             <DeliveryBoyTracking data={{
-                                deliveryBoyLocation: {
+                                deliveryBoyLocation: liveLocations[shopOrder.assignedDeliveryBoy._id] || {
                                     lat: shopOrder.assignedDeliveryBoy.location.coordinates[1],
                                     lon: shopOrder.assignedDeliveryBoy.location.coordinates[0]
                                 },

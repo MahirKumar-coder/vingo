@@ -13,34 +13,53 @@ const DelivaryBoy = () => {
   const [availableAssignments, setAvailableAssignments] = useState([])
   const [currentOrder, setCurrentOrder] = useState(null)
   const [showOtpBox, setShowOtpBox] = useState(false)
+  const [deliveryBoyLocation, setDeliveryBoyLocation] = useState({})
 
+  // ✅ FIX: Geolocation WatchPosition Syntax Fixed
   useEffect(() => {
-    if (!socket || userData.role !== "deliveryBoy") {
-      let watchId
-      if (navigator.geolocation) {
-        watchId = navigator.geolocation.watchPosition((position) => {
-          const latitude = position.coords.latitude
-          const longitude = position.coords.longitude
-          socket.emit('updateLocation', {
-            latitude,
-            longitude,
-            userId: userData._id
-          })
-        }),
-        (error) => {
-          console.log(error);
-          
-        },
-        {
-          enableHighAccuracy: true
-        }
-      }
+    let watchId; // Isey bahar declare karna zaroori hai cleanup ke liye
 
-      return () => {
-        if (watchId) navigator.geolocation.clearWatch(watchId)
+    // Sirf tabhi chalao jab socket ho aur user deliveryBoy ho
+    if (socket && userData?.role === "deliveryBoy") {
+
+      if (navigator.geolocation) {
+        watchId = navigator.geolocation.watchPosition(
+          // 1. Success Callback
+          (position) => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            setDeliveryBoyLocation({lat: latitude, lon: longitude})
+
+            socket.emit('updateLocation', {
+              latitude,
+              longitude,
+              userId: userData._id
+            });
+          },
+          // 2. Error Callback
+          (error) => {
+            console.error("❌ GPS Error:", error.message);
+          },
+          // 3. Options
+          {
+            enableHighAccuracy: true,
+            maximumAge: 0, // Hamesha fresh location lega
+            timeout: 5000 // 5 sec mein location na mile to error dega
+          }
+        );
+      } else {
+        console.error("Browser doesn't support Geolocation");
       }
     }
-  }, [socket, userData])
+
+    // Cleanup function
+    return () => {
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [socket, userData]); // Dependencies sahi hain
 
   const getAssignment = async () => {
     try {
@@ -209,7 +228,16 @@ const DelivaryBoy = () => {
           <p className='text-xs text-gray-400'>{currentOrder.shopOrder.shopOrderItems.length} items | {currentOrder.shopOrder.subtotal}</p>
         </div>
 
-        <DeliveryBoyTracking data={currentOrder} />
+        <DeliveryBoyTracking data={deliveryBoyLocation: deliveryBoyLocation || {
+          deliveryBoyLocation: {
+            lat: userData.location.coordinates[1],
+            lon: userData.location.coordinates[0]
+          },
+          customerLocation: {
+            lat: currentOrder.deliveryAddress?.latitude,
+            lon: currentOrder.deliveryAddress?.longitude
+          }
+        }} />
         {!showOtpBox ? <button className='mt-4 w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md hover:bg-green-600 active:scale-95 transition-all duration-200' onClick={sendOtp}>
           Mark As Delivered
         </button> : <div className='mt-4 p-4 border rounded-xl bg-gray-50'>
@@ -225,4 +253,4 @@ const DelivaryBoy = () => {
 
 export default DelivaryBoy
 
-// 4:33:17
+// 5:12:53

@@ -12,6 +12,7 @@ const DelivaryBoy = () => {
   const [currentOrder, setCurrentOrder] = useState(null)
   const [showOtpBox, setShowOtpBox] = useState(false)
   const [deliveryBoyLocation, setDeliveryBoyLocation] = useState(null)
+  const [todayDeliveries, setTodayDeliveries] = useState([])
 
   useEffect(() => {
     let watchId; 
@@ -122,6 +123,23 @@ const DelivaryBoy = () => {
       setShowOtpBox(false);
       setOtp("");
       await getCurrentOrder(); 
+
+    } catch (error) {
+      console.error("OTP Error:", error);
+      alert(error.response?.data?.message || "Invalid OTP");
+    }
+  }
+
+  const handleTodayDeliveries = async () => {
+    try {
+      const res = await axios.get(
+        `${serverUrl}/api/order/get-today-deliveries`,
+        
+        { withCredentials: true }
+      );
+
+      console.log("Success:", res.data);
+      
 
     } catch (error) {
       console.error("OTP Error:", error);

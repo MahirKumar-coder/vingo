@@ -3,6 +3,8 @@ import { useSelector } from 'react-redux'
 import axios from 'axios'
 import { serverUrl } from '../App'
 import DeliveryBoyTracking from './DeliveryBoyTracking'
+import { BarChart, Bar, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
+import { ClipLoader } from 'react-spinners'
 
 const DelivaryBoy = () => {
   const { userData, socket } = useSelector(state => state.user)
@@ -13,9 +15,11 @@ const DelivaryBoy = () => {
   const [showOtpBox, setShowOtpBox] = useState(false)
   const [deliveryBoyLocation, setDeliveryBoyLocation] = useState(null)
   const [todayDeliveries, setTodayDeliveries] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState("")
 
   useEffect(() => {
-    let watchId; 
+    let watchId;
 
     if (socket && userData?.role === "deliveryBoy") {
       if (navigator.geolocation) {
@@ -37,8 +41,8 @@ const DelivaryBoy = () => {
           },
           {
             enableHighAccuracy: true,
-            maximumAge: 0, 
-            timeout: 5000 
+            maximumAge: 0,
+            timeout: 5000
           }
         );
       } else {
@@ -51,13 +55,16 @@ const DelivaryBoy = () => {
         navigator.geolocation.clearWatch(watchId);
       }
     };
-  }, [socket, userData]); 
+  }, [socket, userData]);
+
+  const ratePerDelivery = 50;
+  const totalEarning = todayDeliveries.reduce((sum, d) => sum + d.count * ratePerDelivery, 0)
 
   const getAssignment = async () => {
     try {
       const res = await axios.get(`${serverUrl}/api/order/get-assignments`, { withCredentials: true })
       console.log(res.data)
-      setAvailableAssignments(res.data.assignments || res.data) 
+      setAvailableAssignments(res.data.assignments || res.data)
     } catch (error) {
       console.log(error)
     }
@@ -86,6 +93,7 @@ const DelivaryBoy = () => {
   }
 
   const sendOtp = async () => {
+    setLoading(true)
     try {
       const res = await axios.post(
         `${serverUrl}/api/order/send-delivery-otp`,
@@ -94,35 +102,38 @@ const DelivaryBoy = () => {
           shopOrderId: currentOrder.shopOrder._id
         },
         { withCredentials: true }
-      );
 
+      );
+      setLoading(false)
       setShowOtpBox(true);
       console.log("OTP Sent:", res.data);
 
     } catch (error) {
       console.error(error);
-      alert("Failed to send OTP");
+      setLoading(false)
     }
   }
 
   const verifyOtp = async () => {
+    setMessage("")
     try {
       const res = await axios.post(
         `${serverUrl}/api/order/verify-delivery-otp`,
         {
           orderId: currentOrder._id,
           shopOrderId: currentOrder.shopOrder._id,
-          otp: otp 
+          otp: otp
         },
         { withCredentials: true }
       );
 
       console.log("Success:", res.data);
-      alert("Order Delivered Successfully!");
+      setMessage(res.data.message)
+      location.reload()
 
       setShowOtpBox(false);
       setOtp("");
-      await getCurrentOrder(); 
+      await getCurrentOrder();
 
     } catch (error) {
       console.error("OTP Error:", error);
@@ -134,16 +145,23 @@ const DelivaryBoy = () => {
     try {
       const res = await axios.get(
         `${serverUrl}/api/order/get-today-deliveries`,
-        
         { withCredentials: true }
       );
 
-      console.log("Success:", res.data);
-      
+      console.log("BACKEND KA DATA 👉", res.data); // Console mein check karna kya aaya
+
+      // Backend response ko zaroorat ke hisaab se format karo
+      const formattedData = res.data.map(item => ({
+        // Agar backend se '_id' ya kuch aur aa raha hai, toh usko 'hour' bana do
+        hour: item.hour || item._id || "Unknown",
+        // Agar backend se 'total' ya 'orders' aa raha hai, toh usko 'count' bana do
+        count: item.count || item.total || item.totalOrders || 0
+      }));
+
+      setTodayDeliveries(formattedData);
 
     } catch (error) {
-      console.error("OTP Error:", error);
-      alert(error.response?.data?.message || "Invalid OTP");
+      console.error("Error fetching deliveries:", error);
     }
   }
 
@@ -173,6 +191,7 @@ const DelivaryBoy = () => {
   useEffect(() => {
     getAssignment()
     getCurrentOrder()
+    handleTodayDeliveries()
   }, [userData])
 
 
@@ -186,6 +205,43 @@ const DelivaryBoy = () => {
             <span className='font-semibold'>Latitude:</span> {deliveryBoyLocation?.lat || userData?.location?.coordinates?.[1]},
             <span className='font-semibold'>Longitude:</span> {deliveryBoyLocation?.lon || userData?.location?.coordinates?.[0]}
           </p>
+        </div>
+
+        <div className='bg-white rounded-2xl shadow-md p-5 w-[90%] mb-6 border border-orange-100'>
+          <h1 className='text-lg font-bold mb-3 text-[#ff4d2d]'>Today Deliveries</h1>
+
+          <div style={{ width: '100%', height: 250 }} className="flex justify-center items-center">
+
+            {/* 👇 FIX: Conditional Rendering - Data hai toh chart, nahi toh message */}
+            {todayDeliveries && todayDeliveries.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={todayDeliveries}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 25 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="hour" tick={{ fontSize: 12, fill: '#666' }} dy={10} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: '#666' }} />
+                    <Tooltip cursor={{ fill: '#fff9f6' }} />
+                    <Bar dataKey="count" fill="#ff4d2d" radius={[4, 4, 0, 0]} barSize={30} />
+                  </BarChart>
+                </ResponsiveContainer>
+
+                <div className='max-w-sm mx-auto mt-6 p-6 bg-white rounded-2xl shadow-lg text-center'>
+                  <h1 className='text-xl font-semibold text-gray-800 mb-2'>Today's Earning</h1>
+                  <span className='text-3xl font-bold text-green-600'>₹{totalEarning}</span>
+                </div>
+              </>
+            ) : (
+              // 👇 Agar array khali hai toh yeh message dikhega
+              <div className="flex flex-col items-center text-gray-400">
+                <span className="text-3xl mb-2">🚚</span>
+                <p className="font-medium text-sm">No deliveries yet for today</p>
+              </div>
+            )}
+
+          </div>
         </div>
       </div>
 
@@ -230,11 +286,12 @@ const DelivaryBoy = () => {
           }
         }} />
 
-        {!showOtpBox ? <button className='mt-4 w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md hover:bg-green-600 active:scale-95 transition-all duration-200' onClick={sendOtp}>
-          Mark As Delivered
+        {!showOtpBox ? <button className='mt-4 w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-xl shadow-md hover:bg-green-600 active:scale-95 transition-all duration-200' onClick={sendOtp} disabled={loading}>
+          {loading ? <ClipLoader size={20} color='white'/> : "Mark as Delivered"}
         </button> : <div className='mt-4 p-4 border rounded-xl bg-gray-50'>
           <p className='text-sm font-semibold mb-2'>Enter Otp send to <span className='text-orange-500'>{currentOrder?.user?.fullName || "Customer"}</span></p>
           <input type="text" className='w-full border px-3 py-2 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-orange-400' placeholder='Enter OTP' onChange={(e) => setOtp(e.target.value)} value={otp} />
+          {message && <p className='text-center text-green-400'>{message}</p>}
           <button className='w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition-all' onClick={verifyOtp}>Submit OTP</button>
         </div>}
       </div>}
@@ -244,3 +301,5 @@ const DelivaryBoy = () => {
 }
 
 export default DelivaryBoy
+
+// 6:12:46

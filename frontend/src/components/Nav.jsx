@@ -239,11 +239,11 @@ const Nav = () => {
             <div className="hidden md:flex items-center gap-2 cursor-pointer relative px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] font-medium" >
               <TbReceiptRupee size={20} onClick={() => navigate('my-orders')} />
               <span onClick={() => navigate('my-orders')}>My Orders</span>
-              <span className="absolute -right-2 -top-2 text-xs font-bold text-white bg-[#ff4d2d] rounded-full px-[6px] py-[1px]">0</span>
+              
             </div>
             <div className="md:hidden flex items-center gap-2 cursor-pointer relative px-3 py-1 rounded-lg bg-[#ff4d2d]/10 text-[#ff4d2d] font-medium">
               <TbReceiptRupee size={20} />
-              <span className="absolute -right-2 -top-2 text-xs font-bold text-white bg-[#ff4d2d] rounded-full px-[6px] py-[1px]">0</span>
+              
             </div>
           </> : (
             <>

@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import {
   setUserData,
   setCurrentCity,
-  logoutUser,
+  // logoutUser,
   setSearchItems
 } from "../redux/userSlice";
 
@@ -33,7 +33,7 @@ const AvatarButton = ({ onClick, children }) => (
 );
 
 // Popup component rendered into body via Portal
-function Popup({ anchorRect, onClose, displayName, onLogout }) {
+function Popup({ anchorRect, displayName, onLogout, navigate }) {
   if (!anchorRect) return null;
 
   const top = Math.round(anchorRect.bottom + 8);
@@ -46,7 +46,7 @@ function Popup({ anchorRect, onClose, displayName, onLogout }) {
       style={{ top: `${top}px`, right: `${right}px`, zIndex: 9999 }}
       role="dialog"
     >
-      <div className="w-[220px] bg-white shadow-2xl rounded-xl p-4 flex flex-col gap-2">
+      <div className="w-220px bg-white shadow-2xl rounded-xl p-4 flex flex-col gap-2">
         <div className="text-[15px] font-semibold truncate">{displayName}</div>
 
         <button className="text-left text-sm text-gray-700 hover:text-[#ff4d2d]">
@@ -111,7 +111,7 @@ const Nav = () => {
     }
   };
 
-  const handleSearchItems = async () => {
+  const handleSearchItems = useCallback(async () => {
     try {
       // 👇 FIX 1: withCredentials (s lagaya hai)
       const result = await axios.get(
@@ -129,7 +129,7 @@ const Nav = () => {
     } catch (error) {
       console.log("❌ SEARCH ERROR:", error);
     }
-  }
+  }, [query, currentCity, dispatch]);
 
 
 
@@ -145,14 +145,7 @@ const Nav = () => {
     if (!menuOpen) return;
     computeRect();
 
-    function handleDocClick(e) {
-      const el = avatarRef.current;
-      if (el && !el.contains(e.target)) {
-        // If click happened outside avatar, we still need to ensure popup area is considered.
-        // Since popup is in body, checks below will close as well when clicking outside.
-        // We won't close here immediately because user might click popup; instead rely on global click close below.
-      }
-    }
+    
 
     const onGlobalClick = (e) => {
       const el = avatarRef.current;
@@ -185,14 +178,14 @@ const Nav = () => {
     } else {
       dispatch(setSearchItems(null));
     }
-  }, [query])
+  }, [query, handleSearchItems, dispatch])
 
   return (
     <nav
       className="fixed top-0 left-0 right-0 z-50 bg-[#fff9f6] backdrop-blur-sm shadow-sm"
       aria-label="Main navigation"
     >
-      <div className="max-w-[1200px] mx-auto flex items-center justify-between px-5 h-20">
+      <div className="max-w-1200px mx-auto flex items-center justify-between px-5 h-20">
         {/* Brand */}
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-extrabold text-[#ff4d2d] select-none tracking-tight">
@@ -204,7 +197,7 @@ const Nav = () => {
         </div>
 
         {/* Search / Location - visible on md+ */}
-        {userData?.role === "user" && <div className="hidden md:flex md:w-[60%] lg:w-[40%] items-center h-[70px] bg-white rounded-lg shadow-md overflow-hidden">
+        {userData?.role === "user" && <div className="hidden md:flex md:w-[60%] lg:w-[40%] items-center h-70px bg-white rounded-lg shadow-md overflow-hidden">
           <div className="flex items-center w-[30%] gap-3 px-4 border-r border-gray-200">
             <FaLocationDot size={22} className="text-[#ff4d2d]" aria-hidden />
             <div className="truncate text-gray-700">{currentCity}</div>
@@ -283,7 +276,7 @@ const Nav = () => {
 
       {/* Mobile search bar (under nav, small) */}
       {userData?.role === "user" && <div className="md:hidden bg-white border-t border-gray-100">
-        <div className="max-w-[1200px] mx-auto px-5 py-2">
+        <div className="max-w-1200px mx-auto px-5 py-2">
           <div className="flex items-center gap-3 bg-white rounded-lg px-3 py-2 shadow-sm">
             <FaSearch size={16} className="text-[#ff4d2d]" aria-hidden />
             <input
@@ -305,6 +298,7 @@ const Nav = () => {
           onClose={() => setMenuOpen(false)}
           displayName={displayName}
           onLogout={handleLogout}
+          navigate={navigate}
         />
       )}
 

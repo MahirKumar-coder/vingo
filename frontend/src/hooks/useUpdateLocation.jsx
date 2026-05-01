@@ -13,20 +13,55 @@ function useUpdateLocation() {
   const { userData } = useSelector(state => state.user);
 
   useEffect(() => {
-    
+    let lastUpdateTime = 0;
+    let lastLat = null;
+    let lastLon = null;
+    const MIN_TIME_INTERVAL = 30000; // 30 seconds minimum
+    const MIN_DISTANCE_THRESHOLD = 100; // 100 meters minimum
+
+    const calculateDistance = (lat1, lon1, lat2, lon2) => {
+      const R = 6371; // Earth radius in km
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c * 1000; // meters mein
+    };
+
     const updateLocation = async (lat, lon) => {
         try {
+            // Check time interval - minimum 30 seconds
+            const now = Date.now();
+            if (now - lastUpdateTime < MIN_TIME_INTERVAL) {
+              console.log("⏱️ Skipping: Too soon, waiting for interval");
+              return;
+            }
+
+            // Check distance - minimum 100 meters
+            if (lastLat !== null && lastLon !== null) {
+              const distance = calculateDistance(lastLat, lastLon, lat, lon);
+              if (distance < MIN_DISTANCE_THRESHOLD) {
+                console.log(`📍 Skipping: Moved only ${distance.toFixed(0)}m`);
+                return;
+              }
+            }
+
+            lastUpdateTime = now;
+            lastLat = lat;
+            lastLon = lon;
+
             // 👇 3. API Call
             const result = await axios.post(
                 `${serverUrl}/api/user/update-location`, 
-                { lat, lon }, // Check backend: kya wahan 'lat/lon' chahiye ya 'latitude/longitude'?
+                { lat, lon },
                 { withCredentials: true }
             );
 
             console.log("✅ Location Updated:", result.data);
             
-            // 👇 4. REDUX DISPATCH (Sabse Important)
-            // Agar ye nahi karoge to Dashboard me data nahi dikhega
+            // 👇 4. REDUX DISPATCH
             if (result.data) {
                 dispatch(setCurrentCity(result.data.city)); 
                 dispatch(setCurrentState(result.data.state));
@@ -44,14 +79,13 @@ function useUpdateLocation() {
             updateLocation(pos.coords.latitude, pos.coords.longitude);
         },
         (error) => console.log("GPS Error:", error),
-        { enableHighAccuracy: true }
+        { enableHighAccuracy: false, maximumAge: 5000, timeout: 5000 }
     );
 
-    // 👇 5. Cleanup Function (Memory Leak rokne ke liye)
-    // Jab component hatega, to location track karna band kar do
+    // 👇 5. Cleanup Function
     return () => navigator.geolocation.clearWatch(watchId);
 
-  }, [userData, dispatch]); 
+  }, []); // 🔥 Dependency array khali - sirf mount par run hoga
 }
 
 export default useUpdateLocation;

@@ -7,7 +7,7 @@ const userRouter = express.Router();
 
 userRouter.get("/current", isAuth, getCurrentUser);
 
-// 👇 YAHAN CHANGE KARO: 'get' hata kar 'post' likho
+
 userRouter.post("/update-location", isAuth, updateUserLocation); 
 
 export default userRouter;

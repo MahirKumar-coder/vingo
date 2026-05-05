@@ -48,12 +48,28 @@ function App() {
   // --- FIX START: Refresh hone par turant Storage check karo ---
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const socketInstance = io(serverUrl, {withCredentials: true})
+    const socketInstance = io(serverUrl, {
+      withCredentials: true,
+      transports: ['websocket'], // Render/Vercel ke liye websocket force karna zaroori hai
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+    })
+    
     dispatch(setSocket(socketInstance))
+    
     socketInstance.on('connect', () => {
       if (userData) {
         socketInstance.emit('identity', {userId: userData._id})
       }
+    });
+
+    // Jab disconnect ho kar reconnect ho
+    socketInstance.io.on("reconnect", () => {
+        if (userData) {
+            socketInstance.emit('identity', {userId: userData._id});
+        }
     });
 
     // 1. Global New Order Handler

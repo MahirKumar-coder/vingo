@@ -15,20 +15,18 @@ export const socketHandler = async (io) => {
 
         socket.on('updateLocation', async ({ latitude, longitude, userId }) => {
             try {
-                // 👇 FIX 1: 'const user =' lagana zaroori hai! Aur { new: true } bhi laga diya
                 const user = await User.findByIdAndUpdate(userId, {
                     location: {
                         type: 'Point',
-                        coordinates: [longitude, latitude] // MongoDB GeoJSON hamesha [lon, lat] leta hai
+                        coordinates: [longitude, latitude]
                     },
                     isOnline: true,
                     socketId: socket.id
                 }, { new: true });
 
-                // 👇 FIX 2: Ab 'user' define ho chuka hai, toh ye if block chalega!
+                
                 if (user) {
-                    // Debugging ke liye log daal diya hai
-                    console.log(`📍 Broadcasting Location to Customer! Boy ID: ${userId}`); 
+                    
                     
                     io.emit('updateDeliveryLocation', {
                         deliveryBoyId: userId,
@@ -37,8 +35,7 @@ export const socketHandler = async (io) => {
                     });
                 }
             } catch (error) {
-                // FIX 3: Error detail print karne ke liye error object pass kiya
-                console.log('❌ updateDeliveryLocation error:', error.message);
+                console.log(error.message);
             }
         });
 

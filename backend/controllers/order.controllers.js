@@ -13,10 +13,8 @@ let instance = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-// 1. PLACE ORDER (No Changes needed, looks good)
 export const placeOrder = async (req, res) => {
     try {
-        console.log("🔥 HIT: placeOrder Controller");
         const { cartItems, paymentMethod, deliveryAddress, totalAmount } = req.body;
 
         if (!cartItems || cartItems.length === 0) return res.status(400).json({ message: 'Cart is empty' });
@@ -92,7 +90,6 @@ export const placeOrder = async (req, res) => {
         await newOrder.populate("shopOrders.shopOrderItems.item", "name image price");
         await newOrder.populate("shopOrders.shop", "name");
 
-        // 👇 FIX 1: Owner ka socketId nikalne ke liye usko populate karna zaroori hai
         await newOrder.populate("shopOrders.owner", "socketId");
 
         const io = req.app.get('io');
@@ -102,7 +99,6 @@ export const placeOrder = async (req, res) => {
                 const ownerSocketId = shopOrder.owner?.socketId; // Ab yahan socketId mil jayega
 
                 if (ownerSocketId) {
-                    // 👇 FIX 2: Logic bahar likho. Aur yahan req.userId (customer) nahi, balki owner ki ID check karni hai
                     const myShopOrders = newOrder.shopOrders.filter(o => String(o.owner._id) === String(shopOrder.owner._id));
 
                     const payload = {
@@ -110,7 +106,6 @@ export const placeOrder = async (req, res) => {
                         shopOrders: myShopOrders
                     };
 
-                    // 👇 FIX 3: Seedha payload bhej do
                     io.to(ownerSocketId).emit('newOrder', payload);
                 }
             });
@@ -148,7 +143,6 @@ export const verifyPayment = async (req, res) => {
         await order.populate("shopOrders.shop", "name");
         await order.populate("shopOrders.owner", "socketId");
 
-        // 👇 YAHAN HAI MAIN FIX: Customer (user) ka data populate karna zaroori hai!
         await order.populate("user", "fullName email mobile");
 
         const io = req.app.get('io');
@@ -176,7 +170,6 @@ export const verifyPayment = async (req, res) => {
     }
 }
 
-// 2. GET MY ORDERS (Fixed Owner Filter Bug)
 export const getMyOrders = async (req, res) => {
     try {
         const user = await User.findById(req.userId);
@@ -199,34 +192,26 @@ export const getMyOrders = async (req, res) => {
                 .populate('shopOrders.shopOrderItems.item', 'name image price')
                 .populate('shopOrders.assignedDeliveryBoy', 'fullName mobile ');
 
-            // 👇 FIX: Owner ko sirf uska data bhejo, dusre shops ka nahi
-            // Lekin Frontend ko array chahiye, isliye filter karne ke baad wapas array format maintain karo
             const filterOrders = orders.map(order => {
-                // Sirf wahi shopOrders rakho jo is owner ke hain
                 const myShopOrders = order.shopOrders.filter(o => String(o.owner) === String(req.userId));
-
                 return {
-                    ...order.toObject(), // Mongoose obj to JS obj
-                    shopOrders: myShopOrders // Replace full list with filtered list
+                    ...order.toObject(),
+                    shopOrders: myShopOrders
                 };
             });
 
-            return res.status(200).json(filterOrders); // ✅ AB SAHI DATA JAYEGA
+            return res.status(200).json(filterOrders);
         }
     } catch (error) {
         return res.status(500).json({ message: `get User Order error ${error}` });
     }
 };
 
-// 3. UPDATE ORDER STATUS (Fixed Logic & Variables)
 export const updateOrderStatus = async (req, res) => {
     try {
         const { orderId, shopId } = req.params;
         const { status } = req.body;
 
-        console.log(`🛠 Updating: Order ${orderId}, Shop ${shopId}, Status ${status}`);
-
-        // 1. Order Find karo aur Status Update karo
         const order = await Order.findOneAndUpdate(
             {
                 _id: orderId,
@@ -247,8 +232,6 @@ export const updateOrderStatus = async (req, res) => {
         let deliveryBoysPayLoad = [];
 
         if (status === 'Out for Delivery' && !targetShopOrder.assignment) {
-            console.log("🚀 Entering Delivery Search Logic...");
-
             const { longitude, latitude } = order.deliveryAddress;
 
             if (!longitude || !latitude) {
@@ -267,8 +250,6 @@ export const updateOrderStatus = async (req, res) => {
                     }
                 }
             });
-
-            console.log(`🎯 Found ${nearByDeliveryBoys.length} Boys nearby.`);
 
             const nearByIds = nearByDeliveryBoys.map(b => b._id);
 
@@ -312,6 +293,16 @@ export const updateOrderStatus = async (req, res) => {
             await order.save();
             await deliveryAssignment.populate('order')
             await deliveryAssignment.populate('shop')
+
+            const io = req.app.get('io');
+            if (io) {
+                availableBoys.forEach(boy => {
+                    if (boy.socketId) {
+                        io.to(boy.socketId).emit('newAssignment');
+                    }
+                });
+            }
+
         }
 
         const finalOrder = await Order.findById(orderId)
@@ -336,7 +327,6 @@ export const updateOrderStatus = async (req, res) => {
             message: "Status Updated",
             shopOrder: finalShopOrder,
             assignedDeliveryBoy: finalShopOrder?.assignedDeliveryBoy,
-            // 👇 FIX: Yahan 'availableBoys' ki jagah 'deliveryBoysPayLoad' aayega!
             availableBoys: deliveryBoysPayLoad,
             assignment: finalShopOrder?.assignment
         });
@@ -351,7 +341,6 @@ export const getDeliveryBoyAssignment = async (req, res) => {
     try {
         const deliveryBoyId = req.userId;
 
-        // FIX: Find object sahi kiya
         const assignments = await DeliveryAssignment.find({
             broadcastedTo: deliveryBoyId,
             status: 'broadcasted'
@@ -365,7 +354,6 @@ export const getDeliveryBoyAssignment = async (req, res) => {
         }
 
         const formatted = assignments.map(a => {
-            // Target shop order dhundo
             const targetShopOrder = a.order.shopOrders.find(so => String(so._id) === String(a.shopOrderId));
 
             return {
@@ -390,12 +378,10 @@ export const acceptOrder = async (req, res) => {
         const { assignmentId } = req.params;
 
         const assignment = await DeliveryAssignment.findById(assignmentId);
-        // FIX: assignmentId nahi balki assignment null hai ya nahi wo check karna hai
         if (!assignment) {
             return res.status(400).json({ message: 'Assignment not found or expired' });
         }
 
-        // FIX: Spelling theek ki 'broadcasted'
         const alreadyAssigned = await DeliveryAssignment.findOne({
             assignedTo: req.userId,
             status: { $nin: ['broadcasted', 'completed', 'cancelled', 'rejected'] }
@@ -410,21 +396,17 @@ export const acceptOrder = async (req, res) => {
             return res.status(400).json({ message: 'Order not found' });
         }
 
-        // ✅ THE MAIN FIX: Normal JS Array .find() use karo, .id() nahi
         const shopOrderIndex = order.shopOrders.findIndex(so => String(so._id) === String(assignment.shopOrderId));
 
         if (shopOrderIndex === -1) {
             return res.status(400).json({ message: 'Shop order not found within the main order' });
         }
 
-        // ✅ State update karo
         order.shopOrders[shopOrderIndex].assignedDeliveryBoy = req.userId;
-        // Agar status update karna hai directly toh:
         order.shopOrders[shopOrderIndex].status = "Out for Delivery";
 
-        await order.save(); // Order save kiya
+        await order.save();
 
-        // Assignment save kiya
         assignment.assignedTo = req.userId;
         assignment.status = 'assigned';
         assignment.acceptedAt = new Date();
@@ -433,7 +415,6 @@ export const acceptOrder = async (req, res) => {
         return res.status(200).json({ success: true, message: 'Order accepted successfully' });
 
     } catch (error) {
-        console.log("ACCEPT ORDER ERROR:", error);
         return res.status(500).json({ message: `Accept order error: ${error.message}` });
     }
 };
@@ -456,8 +437,6 @@ export const getCurrentOrder = async (req, res) => {
             });
 
         if (!assignment) {
-            // Agar assignment nahi hai, toh 400 bhejne ki jagah null ya success:true, data:null bhejo
-            // Kyunki yeh koi error nahi hai, bas order nahi hai! Yahi Frontend mein logic tod raha tha.
             return res.status(200).json({ success: true, order: null, message: 'No active assignment' });
         }
 
@@ -483,7 +462,6 @@ export const getCurrentOrder = async (req, res) => {
             customerLocation.lon = assignment.order.deliveryAddress.longitude;
         }
 
-        // Frontend pe null check lagaya tha, toh sahi object bhejna zaroori hai
         return res.status(200).json({
             success: true,
             order: {
@@ -513,13 +491,11 @@ export const getOrderById = async (req, res) => {
                 path: 'shopOrders.shopOrderItems.item',
                 model: 'Item'
             })
-            // 👇👇 YAHAN SE NAYI LINE ADD KI HAI 👇👇
             .populate({
                 path: 'shopOrders.assignedDeliveryBoy',
                 model: 'User',
-                select: 'fullName mobile location' // Sirf zaroori data bhej rahe hain
+                select: 'fullName mobile location'
             })
-            // 👆👆 YAHAN TAK 👆👆
             .lean()
 
         if (!order) {
@@ -535,15 +511,12 @@ export const sendDeliveryOtp = async (req, res) => {
     try {
         const { orderId, shopOrderId } = req.body;
 
-        // 1. Pehle sirf order dhundo
         const order = await Order.findById(orderId).populate('user');
 
-        // 2. Check karo order mila ya nahi
         if (!order) {
             return res.status(400).json({ message: 'Order not found' });
         }
 
-        // 3. Ab safely shop order nikalo
         const shopOrder = order.shopOrders.id(shopOrderId);
 
         if (!shopOrder) {
@@ -563,43 +536,54 @@ export const sendDeliveryOtp = async (req, res) => {
     }
 }
 
-// 👇 Naya verifyDeliveryOtp Code 👇
 export const verifyDeliveryOtp = async (req, res) => {
     try {
         const { orderId, shopOrderId, otp } = req.body;
 
-        // 1. Pehle sirf order dhundo
         const order = await Order.findById(orderId).populate('user');
 
-        // 2. Turant check karo ki order mila ya nahi!
         if (!order) {
             return res.status(400).json({ message: 'Order not found' });
         }
 
-        // 3. Ab safely shopOrder nikalo (kyunki ab humein pata hai order null nahi hai)
         const shopOrder = order.shopOrders.id(shopOrderId);
 
-        // 4. Check karo ki shopOrder mila ya nahi
         if (!shopOrder) {
             return res.status(400).json({ message: 'Shop order not found' });
         }
 
-        // 5. OTP Check karo
         if (shopOrder.deliveryOtp !== otp || !shopOrder.otpExpires || shopOrder.otpExpires < Date.now()) {
             return res.status(400).json({ message: 'Invalid/Expired Otp' });
         }
 
-        // 6. Status update karo
         shopOrder.status = "Delivered";
         shopOrder.deliveredAt = Date.now();
         await order.save();
 
-        // 7. Assignment delete karo
         await DeliveryAssignment.deleteOne({
             shopOrderId: shopOrder._id,
             order: order._id,
             assignedTo: shopOrder.assignedDeliveryBoy
         });
+
+        await order.populate("shopOrders.owner", "socketId _id");
+        const io = req.app.get('io');
+        if (io) {
+            const payload = {
+                orderId: order._id,
+                shopId: shopOrder.shop,
+                status: "Delivered",
+                userId: order.user._id
+            };
+
+            if (order.user && order.user.socketId) {
+                io.to(order.user.socketId).emit('update-status', payload);
+            }
+
+            if (shopOrder.owner && shopOrder.owner.socketId) {
+                io.to(shopOrder.owner.socketId).emit('update-status', payload);
+            }
+        }
 
         return res.status(200).json({ message: "Order Delivered" });
 

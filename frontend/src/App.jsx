@@ -6,7 +6,7 @@ import SignUp from "./pages/SignUp.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import useGetCurrentUser from './hooks/useGetCurrentUser'
 import { useSelector, useDispatch } from 'react-redux' // useDispatch add kiya
-import { setSocket, setUserData } from './redux/userSlice' // setUserData import kiya
+import { setSocket, setUserData, addMyOrders, updateRealtimeOrderStatus } from './redux/userSlice' // setUserData import kiya
 import Home from "./pages/Home.jsx";
 import Nav from './components/Nav'
 import useGetCity from './hooks/useGetCity'
@@ -30,7 +30,7 @@ export const serverUrl = import.meta.env.VITE_SERVER_URL;
 function App() {
   const dispatch = useDispatch();
 
-  // 1. Hook call ho raha hai (Server sync ke liye thik hai)
+  // ✅ CALL ALL HOOKS AT TOP LEVEL (React Rules of Hooks)
   const apiLoading = useGetCurrentUser();
   useGetCity();
   useGetMyShop();
@@ -54,9 +54,20 @@ function App() {
       if (userData) {
         socketInstance.emit('identity', {userId: userData._id})
       }
-      
-    })
-    
+    });
+
+    // 1. Global New Order Handler
+    socketInstance.on('newOrder', (data) => {
+        
+        if (data?.shopOrders && data.shopOrders.length > 0) {
+            dispatch(addMyOrders(data));
+        }
+    });
+
+    // 2. Global Update Status Handler
+    socketInstance.on('update-status', ({ orderId, shopId, status }) => {
+        dispatch(updateRealtimeOrderStatus({ orderId, shopId, status }));
+    });
 
     // Agar storage me user hai aur Redux khali hai, to Redux me daalo
     if (storedUser && !userData) {

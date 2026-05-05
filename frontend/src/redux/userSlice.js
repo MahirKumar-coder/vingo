@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 
 const storedUser = localStorage.getItem("user");
+const storedCart = localStorage.getItem("cartItems");
 
 const userSlice = createSlice({
     name: "user",
@@ -11,8 +12,8 @@ const userSlice = createSlice({
         currentAddress: null,
         shopInMyCity: null,
         itemsInMyCity: null,
-        cartItems: [],
-        totalAmount: 0,
+        cartItems: storedCart ? JSON.parse(storedCart) : [],
+        totalAmount: storedCart ? JSON.parse(storedCart).reduce((sum, i) => sum + (i.price * i.quantity || 0), 0) : 0,
         MyOrders: [],
         searchItems: null,
         socket: null
@@ -51,7 +52,10 @@ const userSlice = createSlice({
             state.currentState = null;
             state.currentAddress = null;
             state.MyOrders = []; // Logout hone par orders bhi clear kar do
+            state.cartItems = []; // Clear cart on logout
+            state.totalAmount = 0;
             localStorage.removeItem("user");
+            localStorage.removeItem("cartItems"); // Clear cart from localStorage
         },
 
         setItemsInMyCity: (state, action) => {
@@ -71,6 +75,8 @@ const userSlice = createSlice({
                 state.cartItems.push(cartItem);
             }
             state.totalAmount = state.cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+            // 💾 Persist cart to localStorage
+            localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
         },
 
         updateQuantity: (state, action) => {
@@ -80,11 +86,15 @@ const userSlice = createSlice({
                 item.quantity = quantity;
             }
             state.totalAmount = state.cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+            // 💾 Persist cart to localStorage
+            localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
         },
 
         removeCartItem: (state, action) => {
             state.cartItems = state.cartItems.filter(i => i.id !== action.payload);
             state.totalAmount = state.cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+            // 💾 Persist cart to localStorage
+            localStorage.setItem("cartItems", JSON.stringify(state.cartItems));
         },
 
         setMyOrders: (state, action) => {
@@ -134,6 +144,12 @@ const userSlice = createSlice({
         // 👇 FIX: Isko reducers { } block ke andar laya gaya hai
         setSearchItems: (state, action) => {
             state.searchItems = action.payload;
+        },
+
+        clearCart: (state) => {
+            state.cartItems = [];
+            state.totalAmount = 0;
+            localStorage.removeItem("cartItems");
         }
 
     } // <--- Reducers block yahan close hoga
@@ -155,7 +171,8 @@ export const {
     updateOrderStatus,
     setSearchItems,
     setSocket,
-    updateRealtimeOrderStatus
+    updateRealtimeOrderStatus,
+    clearCart
 } = userSlice.actions;
 
 export default userSlice.reducer;

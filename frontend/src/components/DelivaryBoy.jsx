@@ -148,13 +148,10 @@ const DelivaryBoy = () => {
         { withCredentials: true }
       );
 
-      console.log("BACKEND KA DATA 👉", res.data); // Console mein check karna kya aaya
+      
 
-      // Backend response ko zaroorat ke hisaab se format karo
       const formattedData = res.data.map(item => ({
-        // Agar backend se '_id' ya kuch aur aa raha hai, toh usko 'hour' bana do
         hour: item.hour || item._id || "Unknown",
-        // Agar backend se 'total' ya 'orders' aa raha hai, toh usko 'count' bana do
         count: item.count || item.total || item.totalOrders || 0
       }));
 
@@ -166,16 +163,19 @@ const DelivaryBoy = () => {
   }
 
   useEffect(() => {
-    socket.on('newAssignment', (data) => {
-      if (data.sentTo == userData._id) {
-        setAvailableAssignments(prev => [...prev, data])
-      }
-    })
+    if (!socket) return;
+    
+    const handleNewAssignment = () => {
+      
+      getAssignment();
+    };
+
+    socket.on('newAssignment', handleNewAssignment);
 
     return () => {
-      socket?.off('newAssignment')
+      socket.off('newAssignment', handleNewAssignment);
     }
-  }, [socket, userData._id])
+  }, [socket]);
 
   const getCurrentOrder = async () => {
     try {
@@ -201,7 +201,6 @@ const DelivaryBoy = () => {
         <div className='bg-white rounded-2xl shadow-md p-5 flex flex-col justify-start items-center w-[90%] border border-orange-100 text-center gap-2'>
           <h1 className='text-xl font-bold text-[#ff4d2d]'>Welcome, {userData?.fullName} </h1>
           <p className='text-[#ff4d2d]'>
-            {/* 👇 FIX 1: Null check lagaya (Optional Chaining aur Fallback) */}
             <span className='font-semibold'>Latitude:</span> {deliveryBoyLocation?.lat || userData?.location?.coordinates?.[1]},
             <span className='font-semibold'>Longitude:</span> {deliveryBoyLocation?.lon || userData?.location?.coordinates?.[0]}
           </p>
@@ -212,7 +211,6 @@ const DelivaryBoy = () => {
 
           <div style={{ width: '100%', height: 250 }} className="flex justify-center items-center">
 
-            {/* 👇 FIX: Conditional Rendering - Data hai toh chart, nahi toh message */}
             {todayDeliveries && todayDeliveries.length > 0 ? (
               <>
                 <ResponsiveContainer width="100%" height="100%">
@@ -234,7 +232,6 @@ const DelivaryBoy = () => {
                 </div>
               </>
             ) : (
-              // 👇 Agar array khali hai toh yeh message dikhega
               <div className="flex flex-col items-center text-gray-400">
                 <span className="text-3xl mb-2">🚚</span>
                 <p className="font-medium text-sm">No deliveries yet for today</p>
@@ -274,7 +271,6 @@ const DelivaryBoy = () => {
           <p className='text-xs text-gray-400'>{currentOrder.shopOrder.shopOrderItems.length} items | {currentOrder.shopOrder.subtotal}</p>
         </div>
 
-        {/* 👇 FIX 2: Valid Object Syntax for data prop */}
         <DeliveryBoyTracking data={{
           deliveryBoyLocation: deliveryBoyLocation ? deliveryBoyLocation : {
             lat: userData?.location?.coordinates?.[1],

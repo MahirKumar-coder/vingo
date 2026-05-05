@@ -20,9 +20,16 @@ function OwnerOrderCard({ data }) {
   const [assignedBoy, setAssignedBoy] = useState(myShopOrder?.assignedDeliveryBoy || null);
   const [availableBoys, setAvailableBoys] = useState([]);
 
-  // 3. Safety Checks
+  // 3. Sync Redux state with Local State for Real-Time Updates
+  React.useEffect(() => {
+    if (myShopOrder?.status) {
+      setStatus(myShopOrder.status);
+    }
+  }, [myShopOrder?.status]);
+
+  // 4. Safety Checks
   if (!userData) return <div className="p-2 text-gray-500">Loading User...</div>;
-  if (!data || !myShopOrder) return null; 
+  if (!data || !myShopOrder) return null;
 
   // 4. Functions
   const handleUpdateStatus = async (e) => {

@@ -40,10 +40,7 @@ function useGetCity() {
           const result = res?.data?.results?.[0];
 
           if (result) {
-            console.log("📍 Geoapify Result:", result); // Debugging ke liye
-
-            // 👇 YAHAN GALTI THI (Ab Sahi Hai):
-            // 'result' khud hi wo object hai, uske andar direct keys hoti hain
+            
             const city = result.city || result.county || result.suburb || "Unknown City";
             const state = result.state || "Unknown State";
             const address = result.formatted || result.address_line2 || result.address_line1 || "Unknown Address";
@@ -57,11 +54,11 @@ function useGetCity() {
             dispatch(setAddress(address)); 
           }
         } catch (err) {
-          console.error("❌ Geo API error:", err);
+          console.error(" Geo API error:", err);
         }
       },
       (err) => {
-        console.warn("⚠️ Location denied:", err.message);
+        console.warn(" Location denied:", err.message);
       }
     );
   }, [userData, apiKey, dispatch]); 

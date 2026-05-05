@@ -1,7 +1,7 @@
 import React from "react";
 
 const CategoryCard = ({ data, onClick }) => {
-  console.log("CARD DATA 👉", data);
+  
 
   const title = data?.category || data?.name || "No Name";
 

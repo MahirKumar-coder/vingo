@@ -35,7 +35,7 @@ function useUpdateLocation() {
             // Check time interval - minimum 30 seconds
             const now = Date.now();
             if (now - lastUpdateTime < MIN_TIME_INTERVAL) {
-              console.log("⏱️ Skipping: Too soon, waiting for interval");
+              
               return;
             }
 
@@ -43,7 +43,7 @@ function useUpdateLocation() {
             if (lastLat !== null && lastLon !== null) {
               const distance = calculateDistance(lastLat, lastLon, lat, lon);
               if (distance < MIN_DISTANCE_THRESHOLD) {
-                console.log(`📍 Skipping: Moved only ${distance.toFixed(0)}m`);
+                
                 return;
               }
             }
@@ -59,7 +59,7 @@ function useUpdateLocation() {
                 { withCredentials: true }
             );
 
-            console.log("✅ Location Updated:", result.data);
+            console.log(" Location Updated:", result.data);
             
             // 👇 4. REDUX DISPATCH
             if (result.data) {
@@ -69,7 +69,7 @@ function useUpdateLocation() {
             }
 
         } catch (error) {
-            console.error("❌ Location Update Error:", error);
+            console.error(" Location Update Error:", error);
         }
     };
 

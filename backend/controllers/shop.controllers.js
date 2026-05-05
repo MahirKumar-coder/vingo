@@ -100,13 +100,17 @@ export const getShopByCity = async (req, res) => {
             return res.status(400).json({ message: "City name is required" });
         }
 
-        // Case-insensitive Search
+        // Case-insensitive Search with proper population
         const shops = await Shop.find({
             city: { $regex: new RegExp(`^${cleanedCity}$`, "i") },
-        }).populate("items")
-        if (!shops) {
-            return res.status(400).json({ message: "shops not found" })
-        }// ✅ Items bhi dikhane honge user ko
+        })
+            .populate({ path: "owner", select: "-password" })
+            .populate({ path: "items", options: { sort: { updatedAt: -1 } } });
+
+        // Return empty array instead of 400 error
+        if (!shops || shops.length === 0) {
+            return res.status(200).json([]); // Return empty array with 200 status
+        }
 
         return res.status(200).json(shops);
     } catch (error) {

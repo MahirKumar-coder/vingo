@@ -8,8 +8,8 @@ import { sendOtpMail } from "../utils/mail.js";
 // Production aur Localhost dono jagah chalne ke liye cookie options
 const cookieOptions = {
   httpOnly: true,
-  secure: true,       // 🔥 Zaroori: Render HTTPS use karta hai
-  sameSite: "none",   // 🔥 Zaroori: Vercel aur Render alag domains hain
+  secure: process.env.NODE_ENV === "production", // Production (HTTPS) me true, local (HTTP) me false
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // Cross-domain (Vercel->Render) ke liye "none"
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: "/",
 };
@@ -48,7 +48,9 @@ export const signup = async (req, res) => {
     // ✅ Updated Cookie Settings
     res.cookie("token", token, cookieOptions);
 
-    return res.status(201).json(user);
+    const userData = user.toObject ? user.toObject() : user;
+    userData.token = token;
+    return res.status(201).json(userData);
   } catch (error) {
     console.error("signup error:", error);
     return res.status(500).json({ message: "signup error", error: error.message });
@@ -70,7 +72,9 @@ export const signIn = async (req, res) => {
     // ✅ Updated Cookie Settings
     res.cookie("token", token, cookieOptions);
 
-    return res.status(200).json(user);
+    const userData = user.toObject ? user.toObject() : user;
+    userData.token = token;
+    return res.status(200).json(userData);
   } catch (error) {
     console.error("signIn error:", error);
     return res.status(500).json({ message: "signIn error", error: error.message });
@@ -82,8 +86,8 @@ export const signOut = async (_req, res) => {
     // Logout ke waqt bhi same settings honi chahiye tabhi clear hoga
     res.clearCookie("token", {
       httpOnly: true,
-      secure: true,     // 🔥 Match hona chahiye
-      sameSite: "none", // 🔥 Match hona chahiye
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       path: "/",
     });
 
@@ -196,7 +200,9 @@ export const googleAuth = async (req, res) => {
     // ✅ Updated Cookie Settings
     res.cookie("token", token, cookieOptions);
 
-    return res.status(200).json(user);
+    const userData = user.toObject ? user.toObject() : user;
+    userData.token = token;
+    return res.status(200).json(userData);
   } catch (error) {
     console.error("Google Auth Error:", error);
     return res.status(500).json({ message: `googleAuth error: ${error.message}` });

@@ -12,6 +12,7 @@ import { FaCreditCard } from "react-icons/fa";
 
 // ✅ Import actions
 import { setLocation, setAddress } from '../redux/mapSlice';
+import { addMyOrders, clearCart } from '../redux/userSlice';
 
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -19,7 +20,6 @@ import L from 'leaflet';
 
 import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-import { addMyOrders } from '../redux/userSlice';
 
 let DefaultIcon = L.icon({
     iconUrl: icon,
@@ -119,6 +119,7 @@ function CheckOut() {
     // --- 5. Place Order Function (Fixed) ---
     const handlePlaceOrder = async () => {
         if (!address) return alert("Please select a delivery address!");
+        if (!location.lat || !location.lon) return alert("Please click on Search or Current Location button to set your map location!");
         if (cartItems.length === 0) return alert("Your cart is empty!");
 
         setLoading(true); // Button disable start
@@ -132,11 +133,17 @@ function CheckOut() {
                 },
                 totalAmount: amountWithDeliveryFee,
                 cartItems
-            }, { withCredentials: true });
+            }, { 
+                withCredentials: true,
+                headers: {
+                    Authorization: `Bearer ${userData?.token}`
+                }
+            });
 
             if(paymentMethod == 'cod'){
-                dispatch(addMyOrders(result.data))
-                navigate("/order-placed"); // Redirect user
+                dispatch(addMyOrders(result.data.order));
+                dispatch(clearCart()); // 🛒 Clear cart after order placed
+                navigate("/my-orders"); // Redirect directly to orders page
             } else {
                 const orderId = result.data.orderId
                 const razorOrder = result.data.razorOrder
@@ -145,7 +152,8 @@ function CheckOut() {
 
         } catch (error) {
             console.log(error);
-            alert("Failed to place order. Try again.");
+            const errMsg = error.response?.data?.message || error.message;
+            alert("Failed to place order. Error: " + errMsg);
         } finally {
             setLoading(false); // Button enable end
         }
@@ -165,8 +173,9 @@ function CheckOut() {
                         razorpay_payment_id: response.razorpay_payment_id,
                         orderId
                     }, {withCredentials: true})
-                    dispatch(addMyOrders(result.data))
-                    navigate("/order-placed")
+                    dispatch(addMyOrders(result.data));
+                    dispatch(clearCart()); // 🛒 Clear cart after payment successful
+                    navigate("/my-orders");
                 } catch (error) {
                     console.log(error);
                     

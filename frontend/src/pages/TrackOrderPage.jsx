@@ -23,12 +23,10 @@ function TrackOrderPage() {
         }
     }
 
-    // ✅ FIX: Socket Listener with Null Check, Logs and Cleanup
     useEffect(() => {
-        if (!socket) return; // Agar socket load nahi hua, toh aage mat bado
+        if (!socket) return;
 
         const handleLocationUpdate = (data) => {
-            console.log("📍 Live Location Signal Received:", data); // 👈 Debugging ke liye zaroori
 
             const { deliveryBoyId, latitude, longitude } = data;
 
@@ -42,7 +40,6 @@ function TrackOrderPage() {
 
         socket.on('updateDeliveryLocation', handleLocationUpdate);
 
-        // Cleanup function (Component unmount hone par listener hatana zaroori hai)
         return () => {
             socket.off('updateDeliveryLocation', handleLocationUpdate);
         };
@@ -65,7 +62,6 @@ function TrackOrderPage() {
                         <p><span className='font-semibold'>Subtotal:</span>{shopOrder.subtotal}</p>
                         <p className='mt-6'><span className='font-semibold'>Delivery address:</span>{currentOrder.deliveryAddress?.text}</p>
                     </div>
-                    {/* 👇 FIX 1: "Delivered" Capital D ke sath 👇 */}
                     {shopOrder.status !== "Delivered" ? (
                         <>
                             {shopOrder.assignedDeliveryBoy ? (
@@ -81,7 +77,6 @@ function TrackOrderPage() {
                         <p className='text-green-600 font-semibold text-lg'>Delivered</p>
                     )}
 
-                    {/* 👇 FIX 2: "Delivered" Capital D ke sath 👇 */}
                     {(shopOrder.assignedDeliveryBoy?.location?.coordinates && shopOrder.status !== "Delivered") && (
                         <div className='h-[400px] w-full rounded-2xl overflow-hidden shadow-md'>
                             <DeliveryBoyTracking data={{

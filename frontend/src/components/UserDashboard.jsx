@@ -24,15 +24,15 @@ const UserDashboard = () => {
 
   const handleFilterByCategory = (category) => {
     if (category == "All") {
-      setUpdateItemsList(itemsInMyCity)
+      setUpdateItemsList(itemsInMyCity || [])
     } else {
-      const filteredList = itemsInMyCity?.filter(i => i.category === category)
+      const filteredList = (itemsInMyCity || []).filter(i => i.category === category)
       setUpdateItemsList(filteredList)
     }
   }
 
   useEffect(() => {
-    setUpdateItemsList(itemsInMyCity)
+    setUpdateItemsList(itemsInMyCity || [])
   }, [itemsInMyCity])
 
   const updateButtons = (ref, setBtn) => {
@@ -146,7 +146,7 @@ const UserDashboard = () => {
           className="flex gap-4 overflow-x-auto scrollbar-hide px-8"
         >
           {shopInMyCity?.map((shop, i) => {
-            console.log("SHOP DATA 👉", shop);   // 👈 YEH LINE ADD KAR
+           
             return <CategoryCard key={i} data={shop} onClick={() => navigate(`/shop/${shop._id}`)} />;
           })}
         </div>

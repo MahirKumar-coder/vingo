@@ -6,7 +6,7 @@ import UserOrderCard from '../components/UserOrderCard';
 import OwnerOrderCard from '../components/OwnerOrderCard';
 
 // 👇 FIX 1: setMyOrders ki jagah addMyOrders import karo
-import { addMyOrders, updateRealtimeOrderStatus } from '../redux/userSlice';
+import { addMyOrders } from '../redux/userSlice';
 
 function MyOrders() {
     const navigate = useNavigate();
@@ -16,40 +16,7 @@ function MyOrders() {
     // (Ensure karo ki tumhare userSlice me socket ka naam yahi hai)
     const { userData, MyOrders, socket } = useSelector(state => state.user);
 
-    // ✅ Socket Listener Logic
-    useEffect(() => {
-        // Agar socket ya userData abhi tak load nahi hua hai, toh ruk jao
-        if (!socket || !userData) return;
 
-        // 1. New Order Handler
-        const handleNewOrder = (data) => {
-            console.log("🔥 New Order Received from Socket:", data);
-            if (data?.shopOrders && data.shopOrders.length > 0) {
-                dispatch(addMyOrders(data));
-            }
-        };
-
-        // 👇 FIX 1: Update Status Handler ko ek alag function banaya
-        const handleUpdateStatus = ({ orderId, shopId, status, userId }) => {
-            // Null safety ke sath check karo
-            if (userId === userData._id) {
-                dispatch(updateRealtimeOrderStatus({ orderId, shopId, status }));
-            }
-        };
-
-        // Socket events listen karo
-        socket.on('newOrder', handleNewOrder);
-        socket.on('update-status', handleUpdateStatus);
-
-        // Cleanup function
-        return () => {
-            socket.off('newOrder', handleNewOrder);
-            // 👇 FIX 2: Ab sirf yahi wala lisaner hategaa, sab nahi
-            socket.off('update-status', handleUpdateStatus);
-        };
-
-        // 👇 FIX 3: dispatch aur userData ko dependency array mein add kiya
-    }, [socket, dispatch, userData]);
 
     return (
         <div className='w-full min-h-screen bg-[#fff9f6] flex justify-center px-4'>

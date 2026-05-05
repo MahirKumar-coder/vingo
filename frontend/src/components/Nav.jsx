@@ -119,15 +119,14 @@ const Nav = () => {
         { withCredentials: true }
       );
 
-      // 👇 FIX 2: Console log lagaya taaki pata chale backend kya bhej raha hai
-      console.log("SEARCH API RESPONSE 👉", result.data);
+      
 
       // Agar backend { items: [...] } format me data bhejta hai, toh result.data.items likhna padega
       // Filhal main result.data hi chhod raha hu.
       dispatch(setSearchItems(result.data));
 
     } catch (error) {
-      console.log("❌ SEARCH ERROR:", error);
+      console.log(" SEARCH ERROR:", error);
     }
   }, [query, currentCity, dispatch]);
 

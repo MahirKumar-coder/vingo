@@ -31,6 +31,7 @@ const io = new Server(server, {
   cors: {
     origin: [
       "http://localhost:5173",
+      "http://localhost:5174",
       "https://vingo-cyan.vercel.app"
     ],
     credentials: true,
@@ -48,6 +49,7 @@ app.use(cookieParser()); // Cookies read karne ke liye
 app.use(cors({
   origin: [
     "http://localhost:5173",
+    "http://localhost:5174",
     "https://vingo-cyan.vercel.app"
   ],
   credentials: true, // Cookies allow karne ke liye zaroori hai
